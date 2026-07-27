@@ -591,18 +591,30 @@ function downloadQR(busNumber) {
 // ══════════════════════════════════════════════════
 function fmtDT(iso) {
   if (!iso) return '-';
-  return new Date(iso).toLocaleString('en-US', {
-    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+  // Backend returns UTC time, add 'Z' if missing
+  const dateStr = iso.endsWith('Z') ? iso : iso + 'Z';
+  return new Date(dateStr).toLocaleString('en-IN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
   });
 }
 
 function fmtTime(iso) {
   if (!iso) return '-';
-  return new Date(iso).toLocaleTimeString('en-US', {
-    hour: '2-digit', minute: '2-digit'
+  const dateStr = iso.endsWith('Z') ? iso : iso + 'Z';
+  return new Date(dateStr).toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
   });
 }
-
 function toast(msg, type = 'info') {
   const t = document.createElement('div');
   t.className = `toast ${type}`;

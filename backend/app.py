@@ -1,7 +1,14 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from models import db, Bus, Driver, Assignment, BusVisit
-from datetime import datetime, date
+from datetime import datetime, date, timezone, timedelta
+
+# India Standard Time (UTC+5:30)
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def now_ist():
+    """Get current time in India Standard Time"""
+    return datetime.now(IST).replace(tzinfo=None)
 from io import BytesIO
 import zipfile
 
