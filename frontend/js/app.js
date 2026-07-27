@@ -218,9 +218,10 @@ async function loadTrips() {
     const tbody = document.getElementById('trips-body');
 
     if (!visits.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#94a3b8">No visits found</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:#94a3b8">No visits found</td></tr>';
       return;
     }
+
     tbody.innerHTML = visits.map(v => `
       <tr>
         <td><strong>${v.bus_number}</strong><br><small>${v.route}</small></td>
@@ -231,6 +232,10 @@ async function loadTrips() {
         <td><span class="badge ${v.status === 'INSIDE' ? 'in' : 'done'}">
           ${v.status === 'INSIDE' ? '🟢 INSIDE' : '✅ Left'}
         </span></td>
+        <td>
+          <button class="btn danger" onclick="deleteVisit(${v.id})"
+                  style="padding:4px 10px;font-size:11px;">🗑️</button>
+        </td>
       </tr>`).join('');
   } catch { toast('Failed to load history', 'error'); }
 }
@@ -682,3 +687,91 @@ document.addEventListener('DOMContentLoaded', () => {
   const fDate = document.getElementById('f-date');
   if (fDate) fDate.value = new Date().toISOString().split('T')[0];
 });
+// ══════════════════════════════════════════════════
+//  CLEAR HISTORY
+// ══════════════════════════════════════════════════
+
+async function clearAllHistory() {
+  const confirmed = confirm(
+    '⚠️ WARNING!\n\n' +
+    'This will DELETE ALL visit records permanently!\n\n' +
+    'Are you sure you want to continue?'
+  );
+  if (!confirmed) return;
+
+  const doubleCheck = confirm(
+    '❌ FINAL WARNING!\n\n' +
+    'ALL scan history will be lost forever!\n\n' +
+    'Click OK to delete everything.'
+  );
+  if (!doubleCheck) return;
+
+  try {
+    const res = await fetch(`${API}/visits/clear-all`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      toast(data.message, 'success');
+      loadTrips();
+    } else {
+      toast('❌ ' + data.error, 'error');
+    }
+  } catch { toast('Connection error', 'error'); }
+}
+
+async function clearOldHistory() {
+  const confirmed = confirm(
+    'This will delete all records OLDER than 30 days.\n\nContinue?'
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API}/visits/clear-old`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      toast(data.message, 'success');
+      loadTrips();
+    } else {
+      toast('❌ ' + data.error, 'error');
+    }
+  } catch { toast('Connection error', 'error'); }
+}
+
+async function clearByDate() {
+  const date = document.getElementById('f-date').value;
+  if (!date) {
+    toast('Please select a date first!', 'error');
+    return;
+  }
+
+  const confirmed = confirm(
+    `Delete all visits from ${date}?\n\nContinue?`
+  );
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`${API}/visits/clear-by-date?date=${date}`, {
+      method: 'DELETE'
+    });
+    const data = await res.json();
+    if (res.ok) {
+      toast(data.message, 'success');
+      loadTrips();
+    } else {
+      toast('❌ ' + data.error, 'error');
+    }
+  } catch { toast('Connection error', 'error'); }
+}
+
+async function deleteVisit(id) {
+  if (!confirm('Delete this record?')) return;
+  try {
+    const res = await fetch(`${API}/visits/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (res.ok) {
+      toast('✅ Record deleted', 'success');
+      loadTrips();
+    } else {
+      toast('❌ ' + data.error, 'error');
+    }
+  } catch { toast('Connection error', 'error'); }
+}

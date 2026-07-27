@@ -80,11 +80,58 @@
     </div>
   </section>
 
-  <!-- HISTORY TAB -->
+    <!-- HISTORY TAB -->
   <section id="trips" class="page">
     <div class="card">
       <h2>📋 Visit History</h2>
+
       <div class="filter-row">
+        <select id="f-bus" class="input">
+          <option value="">All Buses</option>
+        </select>
+        <select id="f-status" class="input">
+          <option value="">All Status</option>
+          <option value="INSIDE">Inside</option>
+          <option value="COMPLETED">Left</option>
+        </select>
+        <input id="f-date" class="input" type="date"/>
+        <button class="btn primary" onclick="loadTrips()">🔍 Filter</button>
+      </div>
+
+      <!-- Clear History Buttons -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn danger" onclick="clearAllHistory()"
+                style="padding:8px 14px;font-size:12px;">
+          🗑️ Clear All History
+        </button>
+        <button class="btn secondary" onclick="clearOldHistory()"
+                style="padding:8px 14px;font-size:12px;">
+          🧹 Clear Old (30+ days)
+        </button>
+        <button class="btn secondary" onclick="clearByDate()"
+                style="padding:8px 14px;font-size:12px;">
+          📅 Clear Selected Date
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bus</th>
+              <th>Driver</th>
+              <th>Entry Time</th>
+              <th>Exit Time</th>
+              <th>Duration</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="trips-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
         <select id="f-bus" class="input">
           <option value="">All Buses</option>
         </select>
