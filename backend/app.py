@@ -2,25 +2,39 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from models import db, Bus, Driver, Assignment, BusVisit
 from datetime import datetime, date, timezone, timedelta
-
-# India Standard Time (UTC+5:30)
-IST = timezone(timedelta(hours=5, minutes=30))
-
-def now_ist():
-    """Get current time in India Standard Time"""
-    return datetime.now(IST).replace(tzinfo=None)
 from io import BytesIO
 import zipfile
+import os
 
 app = Flask(__name__)
 CORS(app)
 
-import os
+# ══════════════════════════════════════════════════
+#  DATABASE CONFIG
+# ══════════════════════════════════════════════════
 DB_PATH = os.environ.get('DATABASE_PATH', 'sqlite:///bus_tracker.db')
 app.config['SQLALCHEMY_DATABASE_URI'] = DB_PATH
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
+# ══════════════════════════════════════════════════
+#  TIME HELPERS
+# ══════════════════════════════════════════════════
+def now_utc():
+    """Get current time in UTC (naive, for database storage)"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
+
+def to_iso(dt):
+    """Convert datetime to ISO string with Z suffix (tells frontend it is UTC)"""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+# ══════════════════════════════════════════════════
+#  DATABASE INIT
+# ══════════════════════════════════════════════════
 with app.app_context():
     db.create_all()
 
@@ -47,9 +61,12 @@ with app.app_context():
 
     if Driver.query.count() == 0:
         db.session.add_all([
-            Driver(driver_id='DRV-001', name='Ramesh Kumar', phone='+91 98765 43210', license_no='DL-1234567890'),
-            Driver(driver_id='DRV-002', name='Suresh Reddy', phone='+91 98765 43211', license_no='DL-1234567891'),
-            Driver(driver_id='DRV-003', name='Mahesh Sharma', phone='+91 98765 43212', license_no='DL-1234567892'),
+            Driver(driver_id='DRV-001', name='Ramesh Kumar',
+                   phone='+91 98765 43210', license_no='DL-1234567890'),
+            Driver(driver_id='DRV-002', name='Suresh Reddy',
+                   phone='+91 98765 43211', license_no='DL-1234567891'),
+            Driver(driver_id='DRV-003', name='Mahesh Sharma',
+                   phone='+91 98765 43212', license_no='DL-1234567892'),
         ])
         db.session.commit()
         print("✅ Default drivers created.")
@@ -60,14 +77,13 @@ with app.app_context():
 # ══════════════════════════════════════════════════
 @app.route('/api/buses', methods=['GET'])
 def get_buses():
-    today = datetime.utcnow().date()
+    today = now_utc().date()
     buses = Bus.query.all()
     result = []
 
     for b in buses:
         bus_dict = b.to_dict()
 
-        # Get today's assigned driver
         today_assign = Assignment.query.filter_by(
             bus_id=b.id, assignment_date=today
         ).first()
@@ -200,7 +216,8 @@ def get_assignments():
             query = query.filter_by(assignment_date=d)
         except Exception:
             pass
-    return jsonify([a.to_dict() for a in query.order_by(Assignment.assignment_date.desc()).all()])
+    return jsonify([a.to_dict() for a in query.order_by(
+        Assignment.assignment_date.desc()).all()])
 
 
 @app.route('/api/assignments', methods=['POST'])
@@ -217,6 +234,7 @@ def add_assignment():
     driver = Driver.query.filter_by(driver_id=driver_id_str).first()
     if not driver:
         return jsonify({'error': 'Driver not found'}), 404
+
     bus = Bus.query.filter_by(bus_number=bus_number).first()
     if not bus:
         return jsonify({'error': 'Bus not found'}), 404
@@ -227,9 +245,12 @@ def add_assignment():
         return jsonify({'error': 'Invalid date format'}), 400
 
     existing = Assignment.query.filter_by(
-        bus_id=bus.id, assignment_date=assign_date_obj, shift=shift).first()
+        bus_id=bus.id, assignment_date=assign_date_obj, shift=shift
+    ).first()
     if existing:
-        return jsonify({'error': f'Bus {bus_number} already assigned for {assign_date} ({shift})'}), 409
+        return jsonify({
+            'error': f'Bus {bus_number} already assigned for {assign_date} ({shift})'
+        }), 409
 
     assignment = Assignment(
         driver_id=driver.id,
@@ -239,7 +260,10 @@ def add_assignment():
     )
     db.session.add(assignment)
     db.session.commit()
-    return jsonify({'message': 'Assignment created', 'assignment': assignment.to_dict()}), 201
+    return jsonify({
+        'message': 'Assignment created',
+        'assignment': assignment.to_dict()
+    }), 201
 
 
 @app.route('/api/assignments/<int:assignment_id>', methods=['DELETE'])
@@ -253,7 +277,7 @@ def delete_assignment(assignment_id):
 
 
 # ══════════════════════════════════════════════════
-#  BUS ENTRY/EXIT SCAN
+#  BUS ENTRY / EXIT SCAN
 # ══════════════════════════════════════════════════
 @app.route('/api/scan-bus', methods=['POST'])
 def scan_bus():
@@ -267,23 +291,24 @@ def scan_bus():
     if not bus:
         return jsonify({'error': f'Invalid QR. Bus {bus_number} not found.'}), 404
 
-    # Check if this bus is currently inside college
     active_visit = BusVisit.query.filter_by(
         bus_id=bus.id, status='INSIDE'
     ).order_by(BusVisit.entry_time.desc()).first()
 
-    # Get today's driver
-    today = now_ist().date()
+    # Get today's assigned driver
+    today = now_utc().date()
     today_assign = Assignment.query.filter_by(
-        bus_id=bus.id, assignment_date=today).first()
+        bus_id=bus.id, assignment_date=today
+    ).first()
     driver_name = '-'
     if today_assign:
         drv = Driver.query.get(today_assign.driver_id)
         driver_name = drv.name if drv else '-'
 
     if active_visit:
-        # EXIT — bus is leaving
-        active_visit.exit_time = now_ist()
+        # ── EXIT ──────────────────────────────────
+        exit_time = now_utc()
+        active_visit.exit_time = exit_time
         active_visit.status = 'COMPLETED'
         db.session.commit()
 
@@ -299,13 +324,19 @@ def scan_bus():
             'bus_number': bus.bus_number,
             'route': bus.route,
             'driver_name': driver_name,
-            'entry_time': active_visit.entry_time.isoformat(),
-            'exit_time': active_visit.exit_time.isoformat(),
+            'entry_time': to_iso(active_visit.entry_time),
+            'exit_time': to_iso(active_visit.exit_time),
             'duration': duration
         })
+
     else:
-        # ENTRY — bus is arriving
-        visit = BusVisit(bus_id=bus.id, entry_time=now_ist(), status='INSIDE')
+        # ── ENTRY ─────────────────────────────────
+        entry_time = now_utc()
+        visit = BusVisit(
+            bus_id=bus.id,
+            entry_time=entry_time,
+            status='INSIDE'
+        )
         db.session.add(visit)
         db.session.commit()
 
@@ -315,12 +346,12 @@ def scan_bus():
             'bus_number': bus.bus_number,
             'route': bus.route,
             'driver_name': driver_name,
-            'entry_time': visit.entry_time.isoformat()
+            'entry_time': to_iso(visit.entry_time)
         })
 
 
 # ══════════════════════════════════════════════════
-#  VISIT HISTORY + CLEAR
+#  VISIT HISTORY
 # ══════════════════════════════════════════════════
 @app.route('/api/visits', methods=['GET'])
 def get_visits():
@@ -329,12 +360,15 @@ def get_visits():
     date_str = request.args.get('date')
 
     query = BusVisit.query
+
     if bus_number:
         bus = Bus.query.filter_by(bus_number=bus_number).first()
         if bus:
             query = query.filter_by(bus_id=bus.id)
+
     if status:
         query = query.filter_by(status=status)
+
     if date_str:
         try:
             d = datetime.strptime(date_str, '%Y-%m-%d').date()
@@ -343,9 +377,20 @@ def get_visits():
             pass
 
     visits = query.order_by(BusVisit.entry_time.desc()).limit(200).all()
-    return jsonify([v.to_dict() for v in visits])
+
+    result = []
+    for v in visits:
+        item = v.to_dict()
+        item['entry_time'] = to_iso(v.entry_time)
+        item['exit_time'] = to_iso(v.exit_time)
+        result.append(item)
+
+    return jsonify(result)
 
 
+# ══════════════════════════════════════════════════
+#  CLEAR HISTORY
+# ══════════════════════════════════════════════════
 @app.route('/api/visits/clear-all', methods=['DELETE'])
 def clear_all_visits():
     try:
@@ -360,7 +405,7 @@ def clear_all_visits():
 @app.route('/api/visits/clear-old', methods=['DELETE'])
 def clear_old_visits():
     try:
-        cutoff = now_ist() - timedelta(days=30)
+        cutoff = now_utc() - timedelta(days=30)
         old_visits = BusVisit.query.filter(BusVisit.entry_time < cutoff)
         count = old_visits.count()
         old_visits.delete()
@@ -368,16 +413,6 @@ def clear_old_visits():
         return jsonify({'message': f'✅ Deleted {count} records older than 30 days'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/visits/<int:visit_id>', methods=['DELETE'])
-def delete_visit(visit_id):
-    visit = BusVisit.query.get(visit_id)
-    if not visit:
-        return jsonify({'error': 'Visit not found'}), 404
-    db.session.delete(visit)
-    db.session.commit()
-    return jsonify({'message': 'Visit deleted'})
 
 
 @app.route('/api/visits/clear-by-date', methods=['DELETE'])
@@ -395,31 +430,47 @@ def clear_visits_by_date():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/api/visits/<int:visit_id>', methods=['DELETE'])
+def delete_visit(visit_id):
+    visit = BusVisit.query.get(visit_id)
+    if not visit:
+        return jsonify({'error': 'Visit not found'}), 404
+    db.session.delete(visit)
+    db.session.commit()
+    return jsonify({'message': 'Visit deleted'})
+
+
 # ══════════════════════════════════════════════════
 #  DASHBOARD
 # ══════════════════════════════════════════════════
 @app.route('/api/dashboard', methods=['GET'])
 def dashboard():
     try:
-        today = now_ist().date()
+        today = now_utc().date()
 
         buses_inside = BusVisit.query.filter_by(status='INSIDE').count()
 
         today_entries = BusVisit.query.filter(
-            db.func.date(BusVisit.entry_time) == today).count()
+            db.func.date(BusVisit.entry_time) == today
+        ).count()
+
         today_exits = BusVisit.query.filter(
             db.func.date(BusVisit.exit_time) == today,
             BusVisit.status == 'COMPLETED'
         ).count()
 
-        # List all buses with their current status
         buses = Bus.query.all()
         bus_status = []
+
         for b in buses:
-            active = BusVisit.query.filter_by(bus_id=b.id, status='INSIDE').first()
+            active = BusVisit.query.filter_by(
+                bus_id=b.id, status='INSIDE'
+            ).first()
 
             today_assign = Assignment.query.filter_by(
-                bus_id=b.id, assignment_date=today).first()
+                bus_id=b.id, assignment_date=today
+            ).first()
             driver_name = '-'
             if today_assign:
                 drv = Driver.query.get(today_assign.driver_id)
@@ -429,7 +480,7 @@ def dashboard():
                 'bus_number': b.bus_number,
                 'route': b.route,
                 'status': 'INSIDE' if active else 'OUTSIDE',
-                'entry_time': active.entry_time.isoformat() if active else None,
+                'entry_time': to_iso(active.entry_time) if active else None,
                 'today_driver': driver_name
             })
 
@@ -440,9 +491,12 @@ def dashboard():
             'buses_outside': Bus.query.count() - buses_inside,
             'today_entries': today_entries,
             'today_exits': today_exits,
-            'today_assignments': Assignment.query.filter_by(assignment_date=today).count(),
+            'today_assignments': Assignment.query.filter_by(
+                assignment_date=today
+            ).count(),
             'bus_status': bus_status
         })
+
     except Exception as e:
         print(f"Dashboard error: {e}")
         return jsonify({'error': str(e)}), 500
@@ -485,6 +539,9 @@ def generate_qrs():
         return jsonify({'error': str(e)}), 500
 
 
+# ══════════════════════════════════════════════════
+#  RUN
+# ══════════════════════════════════════════════════
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     print(f"🚌 Bus Gate Scanner running on port {port}")
