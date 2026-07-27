@@ -591,7 +591,7 @@ function downloadQR(busNumber) {
 // ══════════════════════════════════════════════════
 function fmtDT(iso) {
   if (!iso) return '-';
-  // Backend returns UTC time, add 'Z' if missing
+  // Add 'Z' to treat as UTC, then convert to IST (India time)
   const dateStr = iso.endsWith('Z') ? iso : iso + 'Z';
   return new Date(dateStr).toLocaleString('en-IN', {
     month: 'short',
