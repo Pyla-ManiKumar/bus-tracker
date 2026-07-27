@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🚌 Bus Gate Scanner</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <h1>🚌 Bus Gate Scanner</h1>
+    <p>Scan Bus QR at College Gate</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="scanner">📷 Scan</button>
+    <button class="tab" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab" data-tab="trips">📋 History</button>
+    <button class="tab" data-tab="manage-buses">🚌 Buses</button>
+    <button class="tab" data-tab="drivers">👤 Drivers</button>
+    <button class="tab" data-tab="assignments">📅 Assign</button>
+    <button class="tab" data-tab="qr-codes">🎫 QR Codes</button>
+  </nav>
+
+  <!-- SCANNER TAB -->
+  <section id="scanner" class="page active">
+    <div class="card">
+      <h2>📷 Scan Bus QR Code</h2>
+      <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
+        Point camera at the QR sticker on the bus door
+      </p>
+
+      <div id="qr-reader"></div>
+
+      <div class="btn-row">
+        <button id="btn-start" class="btn primary"
+                onclick="startScanner()">
+          📷 Start Camera
+        </button>
+        <button id="btn-stop" class="btn danger"
+                onclick="stopScanner()"
+                style="display:none">
+          ⏹ Stop Camera
+        </button>
+      </div>
+
+      <div class="divider"><span>OR Enter Bus Number Manually</span></div>
+
+      <div class="form-group">
+        <input id="manual-id" class="input"
+               placeholder="Bus Number e.g. BUS-001"/>
+      </div>
+      <button class="btn secondary"
+              onclick="manualScan()">
+        ✅ Submit
+      </button>
+    </div>
+
+    <div id="result-box" class="card result-box"
+         style="display:none">
+      <div id="r-icon" class="r-icon"></div>
+      <h2 id="r-action"></h2>
+      <p id="r-msg"></p>
+      <div id="r-details"></div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD TAB -->
+  <section id="dashboard" class="page">
+    <div class="card">
+      <h2>📊 Live Statistics</h2>
+      <div id="stats-grid" class="stats-grid"></div>
+    </div>
+    <div class="card">
+      <h2>🚌 Bus Status</h2>
+      <div id="occupancy-list"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY TAB -->
+  <section id="trips" class="page">
+    <div class="card">
+      <h2>📋 Visit History</h2>
+      <div class="filter-row">
+        <select id="f-bus" class="input">
+          <option value="">All Buses</option>
+        </select>
+        <select id="f-status" class="input">
+          <option value="">All Status</option>
+          <option value="INSIDE">Inside</option>
+          <option value="COMPLETED">Left</option>
+        </select>
+        <input id="f-date" class="input" type="date"/>
+        <button class="btn primary"
+                onclick="loadTrips()">
+          🔍 Filter
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Bus</th>
+              <th>Driver</th>
+              <th>Entry Time</th>
+              <th>Exit Time</th>
+              <th>Duration</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="trips-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- MANAGE BUSES TAB -->
+  <section id="manage-buses" class="page">
+    <div class="card">
+      <h2>🚌 Add New Bus</h2>
+      <form onsubmit="addBus(event)">
+        <div class="form-group">
+          <label>Bus Number *</label>
+          <input id="new-bus-number" class="input"
+                 placeholder="e.g. BUS-026" required/>
+        </div>
+        <div class="form-group">
+          <label>Route *</label>
+          <input id="new-bus-route" class="input"
+                 placeholder="e.g. Route 26: New Zone" required/>
+        </div>
+        <div class="form-group">
+          <label>Capacity *</label>
+          <input id="new-bus-capacity" class="input"
+                 type="number" placeholder="50" value="50" required/>
+        </div>
+        <button class="btn primary block" type="submit">
+          ✅ Add Bus
+        </button>
+      </form>
+      <div id="bus-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>🚌 All Buses</h2>
+      <div id="buses-list"></div>
+    </div>
+  </section>
+
+  <!-- DRIVERS TAB -->
+  <section id="drivers" class="page">
+    <div class="card">
+      <h2>👤 Add New Driver</h2>
+      <form onsubmit="addDriver(event)">
+        <div class="form-group">
+          <label>Driver ID *</label>
+          <input id="new-driver-id" class="input"
+                 placeholder="e.g. DRV-004" required/>
+        </div>
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input id="new-driver-name" class="input"
+                 placeholder="e.g. Ramesh Kumar" required/>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input id="new-driver-phone" class="input"
+                 placeholder="+91 98765 43210"/>
+        </div>
+        <div class="form-group">
+          <label>License Number</label>
+          <input id="new-driver-license" class="input"
+                 placeholder="DL-1234567890"/>
+        </div>
+        <button class="btn primary block" type="submit">
+          ✅ Add Driver
+        </button>
+      </form>
+      <div id="driver-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>👥 All Drivers</h2>
+      <div id="drivers-list"></div>
+    </div>
+  </section>
+
+  <!-- ASSIGNMENTS TAB -->
+  <section id="assignments" class="page">
+    <div class="card">
+      <h2>📅 Assign Driver to Bus</h2>
+      <form onsubmit="addAssignment(event)">
+        <div class="form-group">
+          <label>Date *</label>
+          <input id="assign-date" class="input" type="date" required/>
+        </div>
+        <div class="form-group">
+          <label>Select Driver *</label>
+          <select id="assign-driver" class="input" required>
+            <option value="">-- Choose Driver --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Select Bus *</label>
+          <select id="assign-bus" class="input" required>
+            <option value="">-- Choose Bus --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Shift</label>
+          <select id="assign-shift" class="input">
+            <option value="Full Day">Full Day</option>
+            <option value="Morning">Morning</option>
+            <option value="Afternoon">Afternoon</option>
+            <option value="Night">Night</option>
+          </select>
+        </div>
+        <button class="btn primary block" type="submit">
+          ✅ Assign
+        </button>
+      </form>
+      <div id="assign-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Assignments</h2>
+      <div class="filter-row">
+        <input id="filter-assign-date" class="input" type="date"/>
+        <button class="btn primary" onclick="loadAssignments()">
+          🔍 Filter
+        </button>
+      </div>
+      <div id="assignments-list"></div>
+    </div>
+  </section>
+
+  <!-- QR CODES TAB -->
+  <section id="qr-codes" class="page">
+    <div class="card">
+      <h2>🎫 Bus QR Codes</h2>
+      <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
+        Print these QR codes and stick them on each bus.
+        Gate operator scans them to record entry/exit.
+      </p>
+
+      <button class="btn primary block" onclick="downloadAllQRs()" style="margin-bottom:16px;">
+        ⬇️ Download All QR Codes (ZIP)
+      </button>
+
+      <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;">
+      </div>
+    </div>
+  </section>
+
+  <!-- EDIT BUS MODAL -->
+  <div id="edit-bus-modal"
+       style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+              background:rgba(0,0,0,0.6);z-index:9999;
+              justify-content:center;align-items:center;padding:20px;">
+    <div style="background:white;border-radius:14px;padding:24px;
+                max-width:450px;width:100%;max-height:90vh;overflow-y:auto;">
+      <h2 style="margin-bottom:16px;">✏️ Edit Bus</h2>
+      <form onsubmit="saveEditBus(event)">
+        <input type="hidden" id="edit-bus-number"/>
+        <div class="form-group">
+          <label>Bus Number</label>
+          <input id="edit-bus-num-display" class="input" disabled
+                 style="background:#f1f5f9;"/>
+        </div>
+        <div class="form-group">
+          <label>Route *</label>
+          <input id="edit-route" class="input" required/>
+        </div>
+        <div class="form-group">
+          <label>Capacity *</label>
+          <input id="edit-capacity" class="input" type="number" required/>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button type="button" class="btn secondary"
+                  onclick="closeEditBusModal()" style="flex:1;">
+            ❌ Cancel
+          </button>
+          <button type="submit" class="btn primary" style="flex:1;">
+            💾 Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT DRIVER MODAL -->
+  <div id="edit-driver-modal"
+       style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+              background:rgba(0,0,0,0.6);z-index:9999;
+              justify-content:center;align-items:center;padding:20px;">
+    <div style="background:white;border-radius:14px;padding:24px;
+                max-width:450px;width:100%;max-height:90vh;overflow-y:auto;">
+      <h2 style="margin-bottom:16px;">✏️ Edit Driver</h2>
+      <form onsubmit="saveEditDriver(event)">
+        <input type="hidden" id="edit-driver-id"/>
+        <div class="form-group">
+          <label>Driver ID</label>
+          <input id="edit-driver-id-display" class="input" disabled
+                 style="background:#f1f5f9;"/>
+        </div>
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input id="edit-driver-name" class="input" required/>
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input id="edit-driver-phone" class="input"/>
+        </div>
+        <div class="form-group">
+          <label>License Number</label>
+          <input id="edit-driver-license" class="input"/>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;">
+          <button type="button" class="btn secondary"
+                  onclick="closeEditDriverModal()" style="flex:1;">
+            ❌ Cancel
+          </button>
+          <button type="submit" class="btn primary" style="flex:1;">
+            💾 Save
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer>🚌 Bus Gate Scanner &copy; 2024</footer>
+</div>
+
+<!-- QR Generator Library -->
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

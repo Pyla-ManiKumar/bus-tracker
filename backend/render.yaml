@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: bus-tracker-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    disk:
+      name: bus-tracker-data
+      mountPath: /opt/render/project/src/instance
+      sizeGB: 1
