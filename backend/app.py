@@ -320,74 +320,10 @@ def scan_bus():
 
 
 # ══════════════════════════════════════════════════
-#  VISIT HISTORY
+#  VISIT HISTORY + CLEAR
 # ══════════════════════════════════════════════════
-# ══════════════════════════════════════════════════
-#  CLEAR HISTORY
-# ══════════════════════════════════════════════════
-@app.route('/api/visits/clear-all', methods=['DELETE'])
-def clear_all_visits():
-    """Delete ALL visit records"""
-    try:
-        count = BusVisit.query.count()
-        BusVisit.query.delete()
-        db.session.commit()
-        return jsonify({
-            'message': f'✅ Deleted all {count} records'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/visits/clear-old', methods=['DELETE'])
-def clear_old_visits():
-    """Delete records older than 30 days"""
-    try:
-        from datetime import timedelta
-        cutoff = datetime.utcnow() - timedelta(days=30)
-        old_visits = BusVisit.query.filter(BusVisit.entry_time < cutoff)
-        count = old_visits.count()
-        old_visits.delete()
-        db.session.commit()
-        return jsonify({
-            'message': f'✅ Deleted {count} records older than 30 days'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/visits/<int:visit_id>', methods=['DELETE'])
-def delete_visit(visit_id):
-    """Delete a specific visit record"""
-    visit = BusVisit.query.get(visit_id)
-    if not visit:
-        return jsonify({'error': 'Visit not found'}), 404
-    db.session.delete(visit)
-    db.session.commit()
-    return jsonify({'message': 'Visit deleted'})
-
-
-@app.route('/api/visits/clear-by-date', methods=['DELETE'])
-def clear_visits_by_date():
-    """Delete all visits on a specific date"""
-    date_str = request.args.get('date')
-    if not date_str:
-        return jsonify({'error': 'Date required'}), 400
-
-    try:
-        d = datetime.strptime(date_str, '%Y-%m-%d').date()
-        visits = BusVisit.query.filter(
-            db.func.date(BusVisit.entry_time) == d
-        )
-        count = visits.count()
-        visits.delete()
-        db.session.commit()
-        return jsonify({
-            'message': f'✅ Deleted {count} records from {date_str}'
-        })
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
+@app.route('/api/visits', methods=['GET'])
+def get_visits():
     bus_number = request.args.get('bus_number')
     status = request.args.get('status')
     date_str = request.args.get('date')
@@ -409,6 +345,55 @@ def clear_visits_by_date():
     visits = query.order_by(BusVisit.entry_time.desc()).limit(200).all()
     return jsonify([v.to_dict() for v in visits])
 
+
+@app.route('/api/visits/clear-all', methods=['DELETE'])
+def clear_all_visits():
+    try:
+        count = BusVisit.query.count()
+        BusVisit.query.delete()
+        db.session.commit()
+        return jsonify({'message': f'✅ Deleted all {count} records'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/visits/clear-old', methods=['DELETE'])
+def clear_old_visits():
+    try:
+        cutoff = now_ist() - timedelta(days=30)
+        old_visits = BusVisit.query.filter(BusVisit.entry_time < cutoff)
+        count = old_visits.count()
+        old_visits.delete()
+        db.session.commit()
+        return jsonify({'message': f'✅ Deleted {count} records older than 30 days'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/visits/<int:visit_id>', methods=['DELETE'])
+def delete_visit(visit_id):
+    visit = BusVisit.query.get(visit_id)
+    if not visit:
+        return jsonify({'error': 'Visit not found'}), 404
+    db.session.delete(visit)
+    db.session.commit()
+    return jsonify({'message': 'Visit deleted'})
+
+
+@app.route('/api/visits/clear-by-date', methods=['DELETE'])
+def clear_visits_by_date():
+    date_str = request.args.get('date')
+    if not date_str:
+        return jsonify({'error': 'Date required'}), 400
+    try:
+        d = datetime.strptime(date_str, '%Y-%m-%d').date()
+        visits = BusVisit.query.filter(db.func.date(BusVisit.entry_time) == d)
+        count = visits.count()
+        visits.delete()
+        db.session.commit()
+        return jsonify({'message': f'✅ Deleted {count} records from {date_str}'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # ══════════════════════════════════════════════════
 #  DASHBOARD

@@ -36,13 +36,10 @@
       <div id="qr-reader"></div>
 
       <div class="btn-row">
-        <button id="btn-start" class="btn primary"
-                onclick="startScanner()">
+        <button id="btn-start" class="btn primary" onclick="startScanner()">
           📷 Start Camera
         </button>
-        <button id="btn-stop" class="btn danger"
-                onclick="stopScanner()"
-                style="display:none">
+        <button id="btn-stop" class="btn danger" onclick="stopScanner()" style="display:none">
           ⏹ Stop Camera
         </button>
       </div>
@@ -50,17 +47,12 @@
       <div class="divider"><span>OR Enter Bus Number Manually</span></div>
 
       <div class="form-group">
-        <input id="manual-id" class="input"
-               placeholder="Bus Number e.g. BUS-001"/>
+        <input id="manual-id" class="input" placeholder="Bus Number e.g. BUS-001"/>
       </div>
-      <button class="btn secondary"
-              onclick="manualScan()">
-        ✅ Submit
-      </button>
+      <button class="btn secondary" onclick="manualScan()">✅ Submit</button>
     </div>
 
-    <div id="result-box" class="card result-box"
-         style="display:none">
+    <div id="result-box" class="card result-box" style="display:none">
       <div id="r-icon" class="r-icon"></div>
       <h2 id="r-action"></h2>
       <p id="r-msg"></p>
@@ -80,7 +72,7 @@
     </div>
   </section>
 
-    <!-- HISTORY TAB -->
+  <!-- HISTORY TAB -->
   <section id="trips" class="page">
     <div class="card">
       <h2>📋 Visit History</h2>
@@ -98,7 +90,6 @@
         <button class="btn primary" onclick="loadTrips()">🔍 Filter</button>
       </div>
 
-      <!-- Clear History Buttons -->
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
         <button class="btn danger" onclick="clearAllHistory()"
                 style="padding:8px 14px;font-size:12px;">
@@ -132,37 +123,6 @@
       </div>
     </div>
   </section>
-        <select id="f-bus" class="input">
-          <option value="">All Buses</option>
-        </select>
-        <select id="f-status" class="input">
-          <option value="">All Status</option>
-          <option value="INSIDE">Inside</option>
-          <option value="COMPLETED">Left</option>
-        </select>
-        <input id="f-date" class="input" type="date"/>
-        <button class="btn primary"
-                onclick="loadTrips()">
-          🔍 Filter
-        </button>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Bus</th>
-              <th>Driver</th>
-              <th>Entry Time</th>
-              <th>Exit Time</th>
-              <th>Duration</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody id="trips-body"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
 
   <!-- MANAGE BUSES TAB -->
   <section id="manage-buses" class="page">
@@ -171,22 +131,17 @@
       <form onsubmit="addBus(event)">
         <div class="form-group">
           <label>Bus Number *</label>
-          <input id="new-bus-number" class="input"
-                 placeholder="e.g. BUS-026" required/>
+          <input id="new-bus-number" class="input" placeholder="e.g. BUS-026" required/>
         </div>
         <div class="form-group">
           <label>Route *</label>
-          <input id="new-bus-route" class="input"
-                 placeholder="e.g. Route 26: New Zone" required/>
+          <input id="new-bus-route" class="input" placeholder="e.g. Route 26: New Zone" required/>
         </div>
         <div class="form-group">
           <label>Capacity *</label>
-          <input id="new-bus-capacity" class="input"
-                 type="number" placeholder="50" value="50" required/>
+          <input id="new-bus-capacity" class="input" type="number" placeholder="50" value="50" required/>
         </div>
-        <button class="btn primary block" type="submit">
-          ✅ Add Bus
-        </button>
+        <button class="btn primary block" type="submit">✅ Add Bus</button>
       </form>
       <div id="bus-msg"></div>
     </div>
@@ -204,27 +159,21 @@
       <form onsubmit="addDriver(event)">
         <div class="form-group">
           <label>Driver ID *</label>
-          <input id="new-driver-id" class="input"
-                 placeholder="e.g. DRV-004" required/>
+          <input id="new-driver-id" class="input" placeholder="e.g. DRV-004" required/>
         </div>
         <div class="form-group">
           <label>Full Name *</label>
-          <input id="new-driver-name" class="input"
-                 placeholder="e.g. Ramesh Kumar" required/>
+          <input id="new-driver-name" class="input" placeholder="e.g. Ramesh Kumar" required/>
         </div>
         <div class="form-group">
           <label>Phone Number</label>
-          <input id="new-driver-phone" class="input"
-                 placeholder="+91 98765 43210"/>
+          <input id="new-driver-phone" class="input" placeholder="+91 98765 43210"/>
         </div>
         <div class="form-group">
           <label>License Number</label>
-          <input id="new-driver-license" class="input"
-                 placeholder="DL-1234567890"/>
+          <input id="new-driver-license" class="input" placeholder="DL-1234567890"/>
         </div>
-        <button class="btn primary block" type="submit">
-          ✅ Add Driver
-        </button>
+        <button class="btn primary block" type="submit">✅ Add Driver</button>
       </form>
       <div id="driver-msg"></div>
     </div>
@@ -265,9 +214,7 @@
             <option value="Night">Night</option>
           </select>
         </div>
-        <button class="btn primary block" type="submit">
-          ✅ Assign
-        </button>
+        <button class="btn primary block" type="submit">✅ Assign</button>
       </form>
       <div id="assign-msg"></div>
     </div>
@@ -276,9 +223,7 @@
       <h2>📋 Assignments</h2>
       <div class="filter-row">
         <input id="filter-assign-date" class="input" type="date"/>
-        <button class="btn primary" onclick="loadAssignments()">
-          🔍 Filter
-        </button>
+        <button class="btn primary" onclick="loadAssignments()">🔍 Filter</button>
       </div>
       <div id="assignments-list"></div>
     </div>
@@ -314,8 +259,7 @@
         <input type="hidden" id="edit-bus-number"/>
         <div class="form-group">
           <label>Bus Number</label>
-          <input id="edit-bus-num-display" class="input" disabled
-                 style="background:#f1f5f9;"/>
+          <input id="edit-bus-num-display" class="input" disabled style="background:#f1f5f9;"/>
         </div>
         <div class="form-group">
           <label>Route *</label>
@@ -326,13 +270,8 @@
           <input id="edit-capacity" class="input" type="number" required/>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;">
-          <button type="button" class="btn secondary"
-                  onclick="closeEditBusModal()" style="flex:1;">
-            ❌ Cancel
-          </button>
-          <button type="submit" class="btn primary" style="flex:1;">
-            💾 Save
-          </button>
+          <button type="button" class="btn secondary" onclick="closeEditBusModal()" style="flex:1;">❌ Cancel</button>
+          <button type="submit" class="btn primary" style="flex:1;">💾 Save</button>
         </div>
       </form>
     </div>
@@ -350,8 +289,7 @@
         <input type="hidden" id="edit-driver-id"/>
         <div class="form-group">
           <label>Driver ID</label>
-          <input id="edit-driver-id-display" class="input" disabled
-                 style="background:#f1f5f9;"/>
+          <input id="edit-driver-id-display" class="input" disabled style="background:#f1f5f9;"/>
         </div>
         <div class="form-group">
           <label>Full Name *</label>
@@ -366,13 +304,8 @@
           <input id="edit-driver-license" class="input"/>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;">
-          <button type="button" class="btn secondary"
-                  onclick="closeEditDriverModal()" style="flex:1;">
-            ❌ Cancel
-          </button>
-          <button type="submit" class="btn primary" style="flex:1;">
-            💾 Save
-          </button>
+          <button type="button" class="btn secondary" onclick="closeEditDriverModal()" style="flex:1;">❌ Cancel</button>
+          <button type="submit" class="btn primary" style="flex:1;">💾 Save</button>
         </div>
       </form>
     </div>
@@ -381,7 +314,6 @@
   <footer>🚌 Bus Gate Scanner &copy; 2024</footer>
 </div>
 
-<!-- QR Generator Library -->
 <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
 <script src="js/app.js"></script>
 </body>
