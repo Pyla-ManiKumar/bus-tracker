@@ -40,7 +40,7 @@ function startScanner() {
   ).then(() => {
     scanning = true;
     document.getElementById('btn-start').style.display = 'none';
-    document.getElementById('btn-stop').style.display = 'inline-block';
+    document.getElementById('btn-stop').style.display  = 'inline-flex';
   }).catch(() => {
     toast('Camera not available or permission denied', 'error');
   });
@@ -50,8 +50,8 @@ function stopScanner() {
   if (scanner && scanning) {
     scanner.stop().then(() => {
       scanning = false;
-      document.getElementById('btn-start').style.display = 'inline-block';
-      document.getElementById('btn-stop').style.display = 'none';
+      document.getElementById('btn-start').style.display = 'inline-flex';
+      document.getElementById('btn-stop').style.display  = 'none';
     });
   }
 }
@@ -64,7 +64,7 @@ function manualScan() {
 
 async function processScan(busNumber) {
   try {
-    const res = await fetch(`${API}/scan-bus`, {
+    const res  = await fetch(`${API}/scan-bus`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bus_number: busNumber })
@@ -90,14 +90,12 @@ function showResult(data) {
     data.action === 'ENTRY' ? '🟢' : '🔴';
   document.getElementById('r-action').textContent =
     data.action === 'ENTRY' ? '✅ BUS ENTERED' : '🚪 BUS EXITED';
-  document.getElementById('r-action').style.color =
-    data.action === 'ENTRY' ? '#16a34a' : '#dc2626';
   document.getElementById('r-msg').textContent = data.message;
 
   let details = `
-    ${row('Bus',    data.bus_number)}
-    ${row('Route',  data.route)}
-    ${row('Driver', data.driver_name)}
+    ${row('Bus',        data.bus_number)}
+    ${row('Route',      data.route)}
+    ${row('Driver',     data.driver_name)}
     ${row('Entry Time', fmtTime(data.entry_time))}
   `;
 
@@ -108,18 +106,17 @@ function showResult(data) {
 
   document.getElementById('r-details').innerHTML = details;
   document.getElementById('manual-id').value = '';
-  setTimeout(() => box.style.display = 'none', 12000);
+  setTimeout(() => { box.style.display = 'none'; }, 12000);
 }
 
 function showError(msg) {
   const box = document.getElementById('result-box');
   box.style.display = 'block';
   box.className = 'card result-box err';
-  document.getElementById('r-icon').textContent = '⚠️';
+  document.getElementById('r-icon').textContent   = '⚠️';
   document.getElementById('r-action').textContent = 'Invalid QR';
-  document.getElementById('r-action').style.color = '#d97706';
-  document.getElementById('r-msg').textContent = msg;
-  document.getElementById('r-details').innerHTML = '';
+  document.getElementById('r-msg').textContent    = msg;
+  document.getElementById('r-details').innerHTML  = '';
   toast(msg, 'error');
 }
 
@@ -131,28 +128,36 @@ function row(label, val) {
 }
 
 // ══════════════════════════════════════════════════
-//  LOAD BUSES (for dropdowns)
+//  LOAD BUSES (dropdown)
 // ══════════════════════════════════════════════════
 async function loadBuses() {
   try {
     const buses = await (await fetch(`${API}/buses`)).json();
-    const el = document.getElementById('f-bus');
+    const el    = document.getElementById('f-bus');
     if (!el) return;
-    const firstOption = el.options[0];
+    const first = el.options[0];
     el.innerHTML = '';
-    el.appendChild(firstOption);
+    el.appendChild(first);
     buses.forEach(b => {
-      const o = document.createElement('option');
-      o.value = b.bus_number;
+      const o       = document.createElement('option');
+      o.value       = b.bus_number;
       o.textContent = `${b.bus_number} — ${b.route}`;
       el.appendChild(o);
     });
-  } catch { console.warn('Could not load buses'); }
+  } catch { console.warn('Could not load buses for dropdown'); }
 }
 
 // ══════════════════════════════════════════════════
 //  DASHBOARD
 // ══════════════════════════════════════════════════
+function stat(color, value, label, icon) {
+  return `<div class="stat ${color}">
+    <div class="stat-icon">${icon}</div>
+    <div class="stat-num">${value}</div>
+    <div class="stat-lbl">${label}</div>
+  </div>`;
+}
+
 async function loadDashboard() {
   try {
     const res = await fetch(`${API}/dashboard`);
@@ -160,36 +165,47 @@ async function loadDashboard() {
     const d = await res.json();
 
     document.getElementById('stats-grid').innerHTML = `
-      ${stat('green',  d.buses_inside,       '🟢 Buses INSIDE')}
-      ${stat('yellow', d.buses_outside,      '🚌 Buses OUTSIDE')}
-      ${stat('blue',   d.today_entries,      "Today's Entries")}
-      ${stat('red',    d.today_exits,        "Today's Exits")}
-      ${stat('blue',   d.total_buses,        'Total Buses')}
-      ${stat('blue',   d.total_drivers,      'Total Drivers')}
-      ${stat('yellow', d.today_assignments,  "Today's Assignments")}
+      ${stat('green',  d.buses_inside,      'Buses Inside',        '<i class="fa fa-bus"          style="color:#10b981"></i>')}
+      ${stat('yellow', d.buses_outside,     'Buses Outside',       '<i class="fa fa-bus-simple"   style="color:#f59e0b"></i>')}
+      ${stat('blue',   d.today_entries,     "Today's Entries",     '<i class="fa fa-sign-in-alt"  style="color:#6366f1"></i>')}
+      ${stat('red',    d.today_exits,       "Today's Exits",       '<i class="fa fa-sign-out-alt" style="color:#ef4444"></i>')}
+      ${stat('blue',   d.total_buses,       'Total Buses',         '<i class="fa fa-bus"          style="color:#6366f1"></i>')}
+      ${stat('blue',   d.total_drivers,     'Total Drivers',       '<i class="fa fa-users"        style="color:#6366f1"></i>')}
+      ${stat('yellow', d.today_assignments, "Today's Assignments", '<i class="fa fa-calendar"     style="color:#f59e0b"></i>')}
     `;
 
     document.getElementById('occupancy-list').innerHTML =
       d.bus_status.map(b => {
         const isInside = b.status === 'INSIDE';
         return `
-          <div class="occ-card" style="border-left:4px solid ${isInside ? '#16a34a' : '#94a3b8'};">
+          <div class="occ-card ${isInside ? 'inside' : 'outside'}">
             <div class="occ-head">
-              <span>🚌 ${b.bus_number}</span>
-              <span style="color:${isInside ? '#16a34a' : '#94a3b8'};font-weight:800;">
-                ${isInside ? '🟢 INSIDE' : '⚪ OUTSIDE'}
+              <span>
+                <i class="fa fa-bus"
+                  style="color:${isInside ? '#10b981' : '#64748b'};"></i>
+                ${b.bus_number}
+              </span>
+              <span class="badge ${isInside ? 'in' : 'done'}">
+                ${isInside ? '🟢 Inside' : '⚪ Outside'}
               </span>
             </div>
-            <div class="occ-route">📍 ${b.route}</div>
+            <div class="occ-route">
+              <i class="fa fa-map-pin"
+                style="color:#6366f1;font-size:10px;margin-right:4px;"></i>
+              ${b.route}
+            </div>
             ${isInside && b.entry_time ? `
-              <div style="font-size:12px;color:#64748b;margin-top:4px;">
-                🕐 Entered: ${fmtTime(b.entry_time)}
+              <div style="font-size:11px;color:#64748b;margin-top:6px;">
+                <i class="fa fa-clock" style="color:#6366f1;"></i>
+                ${fmtTime(b.entry_time)}
               </div>` : ''}
             ${b.today_driver && b.today_driver !== '-' ? `
-              <div style="font-size:12px;color:#16a34a;margin-top:6px;font-weight:600;">
-                👤 Driver: ${b.today_driver}
+              <div style="font-size:12px;color:#10b981;
+                          margin-top:6px;font-weight:600;">
+                <i class="fa fa-user"></i> ${b.today_driver}
               </div>` : `
-              <div style="font-size:12px;color:#94a3b8;margin-top:6px;font-style:italic;">
+              <div style="font-size:11px;color:#475569;
+                          margin-top:6px;font-style:italic;">
                 No driver assigned
               </div>`}
           </div>`;
@@ -197,19 +213,12 @@ async function loadDashboard() {
   } catch { toast('Dashboard load failed', 'error'); }
 }
 
-function stat(color, value, label) {
-  return `<div class="stat ${color}">
-    <div class="stat-num">${value}</div>
-    <div class="stat-lbl">${label}</div>
-  </div>`;
-}
-
 // ══════════════════════════════════════════════════
 //  VISIT HISTORY
 // ══════════════════════════════════════════════════
 async function loadTrips() {
   try {
-    let url = `${API}/visits?`;
+    let url      = `${API}/visits?`;
     const bus    = document.getElementById('f-bus').value;
     const status = document.getElementById('f-status').value;
     const date   = document.getElementById('f-date').value;
@@ -221,30 +230,38 @@ async function loadTrips() {
     const tbody  = document.getElementById('trips-body');
 
     if (!visits.length) {
-      tbody.innerHTML = `<tr><td colspan="7"
-        style="text-align:center;padding:20px;color:#94a3b8">
-        No visits found</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7">
+        <div class="empty-state">
+          <i class="fa fa-clock-rotate-left"></i>
+          <p>No records found</p>
+        </div></td></tr>`;
       return;
     }
 
     tbody.innerHTML = visits.map(v => `
       <tr>
-        <td><strong>${v.bus_number}</strong><br><small>${v.route}</small></td>
-        <td>${v.driver_name || '-'}</td>
-        <td>${fmtDT(v.entry_time)}</td>
-        <td>${v.exit_time
-          ? fmtDT(v.exit_time)
-          : '<span style="color:#16a34a;font-weight:700;">Still inside</span>'}
+        <td>
+          <strong style="color:#a5b4fc;">${v.bus_number}</strong><br>
+          <small style="color:#64748b;">${v.route}</small>
         </td>
-        <td>${v.duration || '-'}</td>
+        <td style="color:#94a3b8;">${v.driver_name || '-'}</td>
+        <td style="color:#94a3b8;">${fmtDT(v.entry_time)}</td>
+        <td style="color:#94a3b8;">
+          ${v.exit_time
+            ? fmtDT(v.exit_time)
+            : '<span style="color:#10b981;font-weight:700;">Still Inside</span>'}
+        </td>
+        <td style="color:#94a3b8;">${v.duration || '-'}</td>
         <td>
           <span class="badge ${v.status === 'INSIDE' ? 'in' : 'done'}">
-            ${v.status === 'INSIDE' ? '🟢 INSIDE' : '✅ Left'}
+            ${v.status === 'INSIDE' ? '🟢 Inside' : '✅ Left'}
           </span>
         </td>
         <td>
           <button class="btn danger" onclick="deleteVisit(${v.id})"
-            style="padding:4px 10px;font-size:11px;">🗑️</button>
+            style="padding:5px 10px;font-size:11px;">
+            <i class="fa fa-trash"></i>
+          </button>
         </td>
       </tr>`).join('');
   } catch { toast('Failed to load history', 'error'); }
@@ -259,9 +276,8 @@ async function addBus(e) {
   const route     = document.getElementById('new-bus-route').value.trim();
   const capacity  = document.getElementById('new-bus-capacity').value;
   const msg       = document.getElementById('bus-msg');
-
   try {
-    const res = await fetch(`${API}/buses`, {
+    const res  = await fetch(`${API}/buses`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bus_number: busNumber, route, capacity })
@@ -286,42 +302,61 @@ async function loadBusesList() {
     const list  = document.getElementById('buses-list');
 
     if (!buses.length) {
-      list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px">No buses yet</p>';
+      list.innerHTML = `<div class="empty-state">
+        <i class="fa fa-bus"></i><p>No buses added yet</p></div>`;
       return;
     }
 
     list.innerHTML = buses.map(b => `
-      <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:10px;
-                  border:1px solid #e2e8f0;display:flex;justify-content:space-between;
-                  align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <div style="font-weight:700;font-size:17px;color:#1e293b;">🚌 ${b.bus_number}</div>
-          <div style="font-size:13px;color:#64748b;margin-top:4px;">📍 ${b.route}</div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px;">👥 Capacity: ${b.capacity}</div>
-          <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;">
-            ${b.today_driver_name ? `
-              <div style="font-size:13px;color:#16a34a;font-weight:700;">
-                👤 Today's Driver: ${b.today_driver_name}
-              </div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px;">
-                🆔 ${b.today_driver_id} | ⏰ ${b.today_shift}
-              </div>
-              ${b.today_driver_phone ? `
-                <div style="font-size:11px;color:#64748b;margin-top:2px;">
-                  📞 ${b.today_driver_phone}
-                </div>` : ''}
-            ` : `
-              <div style="font-size:12px;color:#94a3b8;font-style:italic;">
-                ⚠️ No driver assigned today
-              </div>
-            `}
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;
+                    align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:700;font-size:16px;color:#f1f5f9;">
+              <i class="fa fa-bus" style="color:#6366f1;"></i> ${b.bus_number}
+            </div>
+            <div style="font-size:13px;color:#94a3b8;margin-top:4px;">
+              <i class="fa fa-map-pin"
+                style="color:#6366f1;font-size:11px;"></i> ${b.route}
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px;">
+              <i class="fa fa-users" style="font-size:11px;"></i>
+              Capacity: ${b.capacity}
+            </div>
+            <div style="margin-top:10px;padding-top:10px;
+                        border-top:1px solid rgba(255,255,255,0.06);">
+              ${b.today_driver_name ? `
+                <div style="font-size:13px;color:#10b981;font-weight:600;">
+                  <i class="fa fa-user-check"></i> ${b.today_driver_name}
+                </div>
+                <div style="font-size:11px;color:#64748b;margin-top:3px;">
+                  <i class="fa fa-id-badge"></i> ${b.today_driver_id}
+                  &nbsp;|&nbsp;
+                  <i class="fa fa-clock"></i> ${b.today_shift}
+                </div>
+                ${b.today_driver_phone ? `
+                  <div style="font-size:11px;color:#64748b;margin-top:2px;">
+                    <i class="fa fa-phone"></i> ${b.today_driver_phone}
+                  </div>` : ''}
+              ` : `
+                <div style="font-size:12px;color:#475569;font-style:italic;">
+                  <i class="fa fa-triangle-exclamation"></i>
+                  No driver assigned today
+                </div>`}
+            </div>
           </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="btn primary" onclick='openEditBusModal(${JSON.stringify(b)})'
-            style="padding:8px 14px;font-size:12px;">✏️ Edit</button>
-          <button class="btn danger" onclick="deleteBus('${b.bus_number}')"
-            style="padding:8px 14px;font-size:12px;">🗑️ Delete</button>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="btn primary"
+              style="padding:8px 14px;font-size:12px;"
+              onclick='openEditBusModal(${JSON.stringify(b)})'>
+              <i class="fa fa-pen"></i> Edit
+            </button>
+            <button class="btn danger"
+              style="padding:8px 14px;font-size:12px;"
+              onclick="deleteBus('${b.bus_number}')">
+              <i class="fa fa-trash"></i> Delete
+            </button>
+          </div>
         </div>
       </div>`).join('');
   } catch { toast('Failed to load buses', 'error'); }
@@ -341,10 +376,10 @@ async function deleteBus(busNumber) {
 }
 
 function openEditBusModal(bus) {
-  document.getElementById('edit-bus-number').value    = bus.bus_number;
+  document.getElementById('edit-bus-number').value      = bus.bus_number;
   document.getElementById('edit-bus-num-display').value = bus.bus_number;
-  document.getElementById('edit-route').value         = bus.route || '';
-  document.getElementById('edit-capacity').value      = bus.capacity || 50;
+  document.getElementById('edit-route').value           = bus.route    || '';
+  document.getElementById('edit-capacity').value        = bus.capacity || 50;
   document.getElementById('edit-bus-modal').style.display = 'flex';
 }
 
@@ -409,25 +444,45 @@ async function loadDriversList() {
     const list    = document.getElementById('drivers-list');
 
     if (!drivers.length) {
-      list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px">No drivers yet</p>';
+      list.innerHTML = `<div class="empty-state">
+        <i class="fa fa-id-card"></i><p>No drivers added yet</p></div>`;
       return;
     }
 
     list.innerHTML = drivers.map(d => `
-      <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:10px;
-                  border:1px solid #e2e8f0;display:flex;justify-content:space-between;
-                  align-items:flex-start;gap:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <div style="font-weight:700;font-size:16px;color:#1e293b;">👤 ${d.name}</div>
-          <div style="font-size:13px;color:#64748b;margin-top:4px;">🆔 ${d.driver_id}</div>
-          ${d.phone      ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">📞 ${d.phone}</div>`      : ''}
-          ${d.license_no ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">🪪 ${d.license_no}</div>` : ''}
-        </div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="btn primary" onclick='openEditDriverModal(${JSON.stringify(d)})'
-            style="padding:8px 14px;font-size:12px;">✏️ Edit</button>
-          <button class="btn danger" onclick="deleteDriver('${d.driver_id}')"
-            style="padding:8px 14px;font-size:12px;">🗑️ Delete</button>
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;
+                    align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:700;font-size:16px;color:#f1f5f9;">
+              <i class="fa fa-user" style="color:#6366f1;"></i> ${d.name}
+            </div>
+            <div style="font-size:13px;color:#94a3b8;margin-top:4px;">
+              <i class="fa fa-id-badge" style="font-size:11px;"></i>
+              ${d.driver_id}
+            </div>
+            ${d.phone ? `
+              <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                <i class="fa fa-phone" style="font-size:10px;"></i> ${d.phone}
+              </div>` : ''}
+            ${d.license_no ? `
+              <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                <i class="fa fa-id-card" style="font-size:10px;"></i>
+                ${d.license_no}
+              </div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <button class="btn primary"
+              style="padding:8px 14px;font-size:12px;"
+              onclick='openEditDriverModal(${JSON.stringify(d)})'>
+              <i class="fa fa-pen"></i> Edit
+            </button>
+            <button class="btn danger"
+              style="padding:8px 14px;font-size:12px;"
+              onclick="deleteDriver('${d.driver_id}')">
+              <i class="fa fa-trash"></i> Delete
+            </button>
+          </div>
         </div>
       </div>`).join('');
   } catch { toast('Failed to load drivers', 'error'); }
@@ -444,11 +499,11 @@ async function deleteDriver(driverId) {
 }
 
 function openEditDriverModal(d) {
-  document.getElementById('edit-driver-id').value          = d.driver_id;
-  document.getElementById('edit-driver-id-display').value  = d.driver_id;
-  document.getElementById('edit-driver-name').value        = d.name       || '';
-  document.getElementById('edit-driver-phone').value       = d.phone      || '';
-  document.getElementById('edit-driver-license').value     = d.license_no || '';
+  document.getElementById('edit-driver-id').value         = d.driver_id;
+  document.getElementById('edit-driver-id-display').value = d.driver_id;
+  document.getElementById('edit-driver-name').value       = d.name       || '';
+  document.getElementById('edit-driver-phone').value      = d.phone      || '';
+  document.getElementById('edit-driver-license').value    = d.license_no || '';
   document.getElementById('edit-driver-modal').style.display = 'flex';
 }
 
@@ -489,25 +544,24 @@ async function loadAssignmentDropdowns() {
       fetch(`${API}/buses`).then(r => r.json())
     ]);
 
-    const driverSel = document.getElementById('assign-driver');
-    driverSel.innerHTML = '<option value="">-- Choose Driver --</option>';
+    const dSel = document.getElementById('assign-driver');
+    dSel.innerHTML = '<option value="">-- Choose Driver --</option>';
     drivers.forEach(d => {
-      const o = document.createElement('option');
-      o.value = d.driver_id;
+      const o       = document.createElement('option');
+      o.value       = d.driver_id;
       o.textContent = `${d.driver_id} — ${d.name}`;
-      driverSel.appendChild(o);
+      dSel.appendChild(o);
     });
 
-    const busSel = document.getElementById('assign-bus');
-    busSel.innerHTML = '<option value="">-- Choose Bus --</option>';
+    const bSel = document.getElementById('assign-bus');
+    bSel.innerHTML = '<option value="">-- Choose Bus --</option>';
     buses.forEach(b => {
-      const o = document.createElement('option');
-      o.value = b.bus_number;
+      const o       = document.createElement('option');
+      o.value       = b.bus_number;
       o.textContent = `${b.bus_number} — ${b.route}`;
-      busSel.appendChild(o);
+      bSel.appendChild(o);
     });
 
-    // Set today's date as default (IST)
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
     if (!document.getElementById('assign-date').value)
       document.getElementById('assign-date').value = today;
@@ -544,35 +598,51 @@ async function addAssignment(e) {
 async function loadAssignments() {
   try {
     const date = document.getElementById('filter-assign-date').value;
-    let url = `${API}/assignments`;
-    if (date) url += `?date=${date}`;
-
+    const url  = `${API}/assignments${date ? '?date=' + date : ''}`;
     const assignments = await (await fetch(url)).json();
     const list = document.getElementById('assignments-list');
 
     if (!assignments.length) {
-      list.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px">No assignments for this date</p>';
+      list.innerHTML = `<div class="empty-state">
+        <i class="fa fa-calendar-xmark"></i>
+        <p>No assignments for this date</p></div>`;
       return;
     }
 
     list.innerHTML = assignments.map(a => `
-      <div style="background:#f8fafc;border-radius:10px;padding:14px;margin-bottom:10px;
-                  border:1px solid #e2e8f0;display:flex;justify-content:space-between;
-                  align-items:center;gap:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <div style="font-weight:700;font-size:15px;color:#1e293b;">
-            🚌 ${a.bus_number} → 👤 ${a.driver_name}
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;
+                    align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:700;font-size:14px;color:#f1f5f9;">
+              <i class="fa fa-bus" style="color:#6366f1;"></i>
+              ${a.bus_number}
+              <i class="fa fa-arrow-right"
+                style="font-size:10px;color:#64748b;margin:0 4px;"></i>
+              <i class="fa fa-user" style="color:#6366f1;"></i>
+              ${a.driver_name}
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:4px;">
+              <i class="fa fa-calendar"></i> ${a.assignment_date}
+              &nbsp;|&nbsp;
+              <i class="fa fa-clock"></i> ${a.shift}
+            </div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px;">
+              <i class="fa fa-map-pin"
+                style="color:#6366f1;font-size:10px;"></i> ${a.route}
+            </div>
+            ${a.driver_phone && a.driver_phone !== '-' ? `
+              <div style="font-size:12px;color:#64748b;margin-top:2px;">
+                <i class="fa fa-phone" style="font-size:10px;"></i>
+                ${a.driver_phone}
+              </div>` : ''}
           </div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px;">
-            📅 ${a.assignment_date} | ⏰ ${a.shift}
-          </div>
-          <div style="font-size:12px;color:#64748b;margin-top:2px;">📍 ${a.route}</div>
-          ${a.driver_phone && a.driver_phone !== '-'
-            ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">📞 ${a.driver_phone}</div>`
-            : ''}
+          <button class="btn danger"
+            style="padding:8px 14px;font-size:12px;"
+            onclick="deleteAssignment(${a.id})">
+            <i class="fa fa-trash"></i> Remove
+          </button>
         </div>
-        <button class="btn danger" onclick="deleteAssignment(${a.id})"
-          style="padding:8px 14px;font-size:12px;">🗑️ Remove</button>
       </div>`).join('');
   } catch { toast('Failed to load assignments', 'error'); }
 }
@@ -596,20 +666,28 @@ async function loadQRCodes() {
     const grid  = document.getElementById('qr-grid');
 
     if (!buses.length) {
-      grid.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px">No buses yet</p>';
+      grid.innerHTML = `<div class="empty-state">
+        <i class="fa fa-qrcode"></i><p>No buses yet</p></div>`;
       return;
     }
 
     grid.innerHTML = buses.map(b => `
-      <div style="background:white;border:2px solid #e2e8f0;border-radius:10px;
-                  padding:14px;text-align:center;">
+      <div class="qr-card">
         <div id="qr-${b.bus_number}"
           style="display:flex;justify-content:center;margin-bottom:10px;"></div>
-        <div style="font-weight:700;font-size:14px;color:#1e293b;">🚌 ${b.bus_number}</div>
-        <div style="font-size:11px;color:#64748b;margin-top:2px;">${b.route}</div>
+        <div style="font-weight:700;font-size:13px;color:#f1f5f9;">
+          <i class="fa fa-bus" style="color:#6366f1;font-size:11px;"></i>
+          ${b.bus_number}
+        </div>
+        <div style="font-size:10px;color:#64748b;
+                    margin-top:2px;margin-bottom:12px;">
+          ${b.route}
+        </div>
         <button class="btn primary"
-          style="padding:6px 12px;font-size:11px;margin-top:8px;"
-          onclick="downloadQR('${b.bus_number}')">⬇️ Download</button>
+          style="padding:7px 12px;font-size:11px;width:100%;"
+          onclick="downloadQR('${b.bus_number}')">
+          <i class="fa fa-download"></i> Download
+        </button>
       </div>`).join('');
 
     buses.forEach(b => {
@@ -617,51 +695,56 @@ async function loadQRCodes() {
       if (container) {
         new QRCode(container, {
           text: b.bus_number,
-          width: 160,
-          height: 160,
-          colorDark: '#000000',
+          width: 150, height: 150,
+          colorDark:  '#000000',
           colorLight: '#ffffff',
           correctLevel: QRCode.CorrectLevel.H
         });
       }
     });
 
+    // Magic card mouse tracking (from magicui)
+    document.querySelectorAll('.qr-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty('--mx',
+          ((e.clientX - r.left) / r.width  * 100) + '%');
+        card.style.setProperty('--my',
+          ((e.clientY - r.top)  / r.height * 100) + '%');
+      });
+    });
+
     toast('✅ QR codes loaded!', 'success');
-  } catch (err) {
-    console.error('QR load error:', err);
-    toast('Failed to load QR codes', 'error');
-  }
+  } catch { toast('Failed to load QR codes', 'error'); }
 }
 
 function downloadQR(busNumber) {
   const container = document.getElementById(`qr-${busNumber}`);
   const canvas    = container.querySelector('canvas');
   const img       = container.querySelector('img');
-
-  let dataUrl;
-  if (canvas)     dataUrl = canvas.toDataURL('image/png');
-  else if (img)   dataUrl = img.src;
+  let   dataUrl;
+  if (canvas)   dataUrl = canvas.toDataURL('image/png');
+  else if (img) dataUrl = img.src;
   else { toast('QR not ready', 'error'); return; }
-
-  const link      = document.createElement('a');
-  link.download   = `${busNumber}.png`;
-  link.href       = dataUrl;
+  const link    = document.createElement('a');
+  link.download = `${busNumber}.png`;
+  link.href     = dataUrl;
   link.click();
 }
 
 // ══════════════════════════════════════════════════
-//  TIME HELPERS (UTC → IST display)
+//  TIME HELPERS (UTC → IST)
 // ══════════════════════════════════════════════════
 function fmtDT(iso) {
   if (!iso) return '-';
   return new Date(iso).toLocaleString('en-IN', {
-    month:   'short',
-    day:     'numeric',
-    year:    'numeric',
-    hour:    '2-digit',
-    minute:  '2-digit',
-    second:  '2-digit',
-    hour12:  true,
+    month:    'short',
+    day:      'numeric',
+    year:     'numeric',
+    hour:     '2-digit',
+    minute:   '2-digit',
+    second:   '2-digit',
+    hour12:   true,
     timeZone: 'Asia/Kolkata'
   });
 }
@@ -669,31 +752,37 @@ function fmtDT(iso) {
 function fmtTime(iso) {
   if (!iso) return '-';
   return new Date(iso).toLocaleTimeString('en-IN', {
-    hour:    '2-digit',
-    minute:  '2-digit',
-    second:  '2-digit',
-    hour12:  true,
+    hour:     '2-digit',
+    minute:   '2-digit',
+    second:   '2-digit',
+    hour12:   true,
     timeZone: 'Asia/Kolkata'
   });
 }
 
 // ══════════════════════════════════════════════════
-//  TOAST NOTIFICATION
+//  TOAST
 // ══════════════════════════════════════════════════
 function toast(msg, type = 'info') {
-  const t = document.createElement('div');
-  t.className   = `toast ${type}`;
-  t.textContent = msg;
+  const icons = {
+    success: 'fa-circle-check',
+    error:   'fa-circle-xmark',
+    info:    'fa-circle-info'
+  };
+  const t     = document.createElement('div');
+  t.className = `toast ${type === 'error' ? 'error' : type}`;
+  t.innerHTML = `<i class="fa ${icons[type] || icons.info}"></i> ${msg}`;
   document.body.appendChild(t);
   setTimeout(() => {
-    t.style.opacity    = '0';
-    t.style.transition = '.3s';
+    t.style.opacity   = '0';
+    t.style.transform = 'translateX(120px)';
+    t.style.transition = '0.3s ease';
     setTimeout(() => t.remove(), 300);
   }, 3000);
 }
 
 // ══════════════════════════════════════════════════
-//  BEEP SOUND
+//  BEEP
 // ══════════════════════════════════════════════════
 function beep(isEntry) {
   try {
@@ -711,18 +800,12 @@ function beep(isEntry) {
 }
 
 // ══════════════════════════════════════════════════
-//  SHOW MESSAGE
+//  SHOW MSG
 // ══════════════════════════════════════════════════
 function showMsg(el, text, ok) {
-  el.textContent        = text;
-  el.style.display      = 'block';
-  el.style.background   = ok ? '#dcfce7' : '#fee2e2';
-  el.style.color        = ok ? '#16a34a' : '#dc2626';
-  el.style.padding      = '10px';
-  el.style.borderRadius = '8px';
-  el.style.textAlign    = 'center';
-  el.style.marginTop    = '10px';
-  el.style.fontWeight   = '700';
+  el.textContent   = text;
+  el.className     = `msg-box ${ok ? 'ok' : 'err'}`;
+  el.style.display = 'block';
   setTimeout(() => { el.style.display = 'none'; }, 3000);
 }
 
@@ -730,16 +813,8 @@ function showMsg(el, text, ok) {
 //  CLEAR HISTORY
 // ══════════════════════════════════════════════════
 async function clearAllHistory() {
-  const confirmed = confirm(
-    '⚠️ WARNING!\n\nThis will DELETE ALL visit records permanently!\n\nAre you sure?'
-  );
-  if (!confirmed) return;
-
-  const doubleCheck = confirm(
-    '❌ FINAL WARNING!\n\nALL scan history will be lost forever!\n\nClick OK to delete everything.'
-  );
-  if (!doubleCheck) return;
-
+  if (!confirm('⚠️ Delete ALL visit records permanently?')) return;
+  if (!confirm('❌ FINAL WARNING — this cannot be undone. Continue?')) return;
   try {
     const res  = await fetch(`${API}/visits/clear-all`, { method: 'DELETE' });
     const data = await res.json();
@@ -749,9 +824,7 @@ async function clearAllHistory() {
 }
 
 async function clearOldHistory() {
-  const confirmed = confirm('This will delete all records OLDER than 30 days.\n\nContinue?');
-  if (!confirmed) return;
-
+  if (!confirm('Delete all records older than 30 days?')) return;
   try {
     const res  = await fetch(`${API}/visits/clear-old`, { method: 'DELETE' });
     const data = await res.json();
@@ -762,13 +835,12 @@ async function clearOldHistory() {
 
 async function clearByDate() {
   const date = document.getElementById('f-date').value;
-  if (!date) { toast('Please select a date first!', 'error'); return; }
-
-  const confirmed = confirm(`Delete all visits from ${date}?\n\nContinue?`);
-  if (!confirmed) return;
-
+  if (!date) { toast('Select a date first!', 'error'); return; }
+  if (!confirm(`Delete all visits from ${date}?`)) return;
   try {
-    const res  = await fetch(`${API}/visits/clear-by-date?date=${date}`, { method: 'DELETE' });
+    const res  = await fetch(
+      `${API}/visits/clear-by-date?date=${date}`, { method: 'DELETE' }
+    );
     const data = await res.json();
     if (res.ok) { toast(data.message, 'success'); loadTrips(); }
     else toast('❌ ' + data.error, 'error');
@@ -791,9 +863,10 @@ async function deleteVisit(id) {
 document.addEventListener('DOMContentLoaded', () => {
   loadBuses();
   loadDashboard();
-  // Set today's date in IST for the filter
   const fDate = document.getElementById('f-date');
   if (fDate) {
-    fDate.value = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    fDate.value = new Date().toLocaleDateString('en-CA', {
+      timeZone: 'Asia/Kolkata'
+    });
   }
 });

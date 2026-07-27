@@ -1,320 +1,1152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🚌 Bus Gate Scanner</title>
-  <link rel="stylesheet" href="css/style.css"/>
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <title>🚌 Bus Gate Tracker</title>
+
+  <!-- ══ Google Fonts (from design-resources repo) ══ -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+
+  <!-- ══ Font Awesome Icons (from design-resources repo) ══ -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <!-- ══ Animate.css (from design-resources repo) ══ -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+  <!-- ══ QR Libraries ══ -->
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* ══════════════════════════════════════════════
+       ROOT VARIABLES
+    ══════════════════════════════════════════════ */
+    :root {
+      --primary:     #4f46e5;
+      --primary-light: #818cf8;
+      --primary-dark: #3730a3;
+      --success:     #16a34a;
+      --danger:      #dc2626;
+      --warning:     #d97706;
+      --info:        #0891b2;
+      --bg:          #f1f5f9;
+      --card:        #ffffff;
+      --border:      #e2e8f0;
+      --text:        #1e293b;
+      --muted:       #64748b;
+      --radius:      14px;
+      --shadow:      0 4px 24px rgba(79,70,229,0.08);
+      --shadow-lg:   0 8px 40px rgba(79,70,229,0.15);
+    }
+
+    /* ══════════════════════════════════════════════
+       RESET & BASE
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ══════════════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════════════ */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 60%, var(--primary-light) 100%);
+      color: white;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 4px 20px rgba(79,70,229,0.3);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-icon {
+      width: 48px;
+      height: 48px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-text h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .header-text p {
+      font-size: 12px;
+      opacity: 0.8;
+      font-weight: 400;
+    }
+
+    .header-badge {
+      margin-left: auto;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+
+    /* ══════════════════════════════════════════════
+       NAVIGATION TABS
+    ══════════════════════════════════════════════ */
+    .nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
+      gap: 2px;
+      padding: 8px 12px;
+      position: sticky;
+      top: 85px;
+      z-index: 99;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      scrollbar-width: none;
+    }
+
+    .nav::-webkit-scrollbar { display: none; }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab:hover {
+      background: #f1f5f9;
+      color: var(--primary);
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+    }
+
+    .tab i { font-size: 13px; }
+
+    /* ══════════════════════════════════════════════
+       PAGES
+    ══════════════════════════════════════════════ */
+    .page { display: none; padding: 20px; max-width: 900px; margin: 0 auto; }
+    .page.active { display: block; animation: fadeInUp 0.3s ease; }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════════════
+       CARDS
+    ══════════════════════════════════════════════ */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title i {
+      color: var(--primary);
+      font-size: 18px;
+    }
+
+    /* ══════════════════════════════════════════════
+       STATS GRID
+    ══════════════════════════════════════════════ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .stat:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat.green::before  { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .stat.yellow::before { background: linear-gradient(90deg, #d97706, #fbbf24); }
+    .stat.blue::before   { background: linear-gradient(90deg, var(--primary), var(--primary-light)); }
+    .stat.red::before    { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+    .stat-icon {
+      font-size: 22px;
+      margin-bottom: 6px;
+    }
+
+    .stat-num {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat.green  .stat-num { color: #16a34a; }
+    .stat.yellow .stat-num { color: #d97706; }
+    .stat.blue   .stat-num { color: var(--primary); }
+    .stat.red    .stat-num { color: #dc2626; }
+
+    .stat-lbl {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    /* ══════════════════════════════════════════════
+       BUS STATUS CARDS
+    ══════════════════════════════════════════════ */
+    .occ-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .occ-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease;
+    }
+
+    .occ-card:hover { transform: translateY(-2px); }
+
+    .occ-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .occ-route {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ══════════════════════════════════════════════
+       SCANNER SECTION
+    ══════════════════════════════════════════════ */
+    #qr-reader {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 2px dashed var(--border);
+    }
+
+    .scanner-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .manual-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .manual-row input { flex: 1; min-width: 180px; }
+
+    /* ══════════════════════════════════════════════
+       RESULT BOX
+    ══════════════════════════════════════════════ */
+    .result-box {
+      display: none;
+      animation: pulse 0.4s ease;
+    }
+
+    @keyframes pulse {
+      0%   { transform: scale(0.96); opacity: 0; }
+      60%  { transform: scale(1.02); }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+
+    .result-box.entry {
+      border: 2px solid #16a34a;
+      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    }
+
+    .result-box.exit {
+      border: 2px solid #dc2626;
+      background: linear-gradient(135deg, #fff5f5, #fee2e2);
+    }
+
+    .result-box.err {
+      border: 2px solid #d97706;
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+    }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .result-icon {
+      font-size: 36px;
+      line-height: 1;
+    }
+
+    .result-action {
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .result-msg {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .drow {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      font-size: 13px;
+    }
+
+    .drow:last-child { border-bottom: none; }
+
+    .dlabel {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .dval {
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+    }
+
+    /* ══════════════════════════════════════════════
+       FORMS
+    ══════════════════════════════════════════════ */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      background: #f8fafc;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+      background: white;
+    }
+
+    /* ══════════════════════════════════════════════
+       BUTTONS
+    ══════════════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.3);
+    }
+
+    .btn.primary:hover {
+      box-shadow: 0 6px 20px rgba(79,70,229,0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn.success {
+      background: linear-gradient(135deg, #16a34a, #4ade80);
+      color: white;
+      box-shadow: 0 4px 12px rgba(22,163,74,0.3);
+    }
+
+    .btn.success:hover {
+      box-shadow: 0 6px 20px rgba(22,163,74,0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn.danger {
+      background: linear-gradient(135deg, #dc2626, #f87171);
+      color: white;
+      box-shadow: 0 4px 12px rgba(220,38,38,0.25);
+    }
+
+    .btn.danger:hover {
+      box-shadow: 0 6px 20px rgba(220,38,38,0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn.warning {
+      background: linear-gradient(135deg, #d97706, #fbbf24);
+      color: white;
+      box-shadow: 0 4px 12px rgba(217,119,6,0.3);
+    }
+
+    .btn.secondary {
+      background: #f1f5f9;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn.secondary:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* ══════════════════════════════════════════════
+       TABLE
+    ══════════════════════════════════════════════ */
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    thead {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+    }
+
+    thead th {
+      padding: 12px 14px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+
+    tbody td {
+      padding: 12px 14px;
+      vertical-align: middle;
+    }
+
+    /* ══════════════════════════════════════════════
+       BADGES
+    ══════════════════════════════════════════════ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge.in   { background: #dcfce7; color: #16a34a; }
+    .badge.done { background: #f1f5f9; color: var(--muted); }
+
+    /* ══════════════════════════════════════════════
+       FILTERS BAR
+    ══════════════════════════════════════════════ */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 16px;
+      background: var(--card);
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .filter-bar .form-group {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    /* ══════════════════════════════════════════════
+       MODALS
+    ══════════════════════════════════════════════ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15,23,42,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--card);
+      border-radius: 18px;
+      padding: 24px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+      animation: slideUp 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+
+    .modal-title i { color: var(--primary); }
+
+    /* ══════════════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      z-index: 9999;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      animation: slideIn 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 320px;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100px); opacity: 0; }
+      to   { transform: translateX(0);     opacity: 1; }
+    }
+
+    .toast.success { background: linear-gradient(135deg, #16a34a, #4ade80); }
+    .toast.error   { background: linear-gradient(135deg, #dc2626, #f87171); }
+    .toast.info    { background: linear-gradient(135deg, var(--primary), var(--primary-light)); }
+
+    /* ══════════════════════════════════════════════
+       QR GRID
+    ══════════════════════════════════════════════ */
+    .qr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .qr-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      text-align: center;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .qr-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary-light);
+    }
+
+    /* ══════════════════════════════════════════════
+       SECTION DIVIDER
+    ══════════════════════════════════════════════ */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 20px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ══════════════════════════════════════════════
+       EMPTY STATE
+    ══════════════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.3;
+      display: block;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    /* ══════════════════════════════════════════════
+       MSG BOX
+    ══════════════════════════════════════════════ */
+    .msg-box {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .msg-box.ok  { background: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+    .msg-box.err { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
+    /* ══════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════ */
+    @media (max-width: 600px) {
+      .header { padding: 14px 16px; }
+      .header-text h1 { font-size: 16px; }
+      .page { padding: 14px; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .tab { padding: 7px 12px; font-size: 11px; }
+    }
+  </style>
 </head>
+
 <body>
-<div class="app">
 
-  <header>
-    <h1>🚌 Bus Gate Scanner</h1>
-    <p>Scan Bus QR at College Gate</p>
-  </header>
+  <!-- ══════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════ -->
+  <div class="header">
+    <div class="header-icon">🚌</div>
+    <div class="header-text">
+      <h1>Bus Gate Tracker</h1>
+      <p>College Bus Management System</p>
+    </div>
+    <div class="header-badge">
+      <i class="fa fa-circle" style="color:#4ade80;font-size:8px;"></i> Live
+    </div>
+  </div>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="scanner">📷 Scan</button>
-    <button class="tab" data-tab="dashboard">📊 Dashboard</button>
-    <button class="tab" data-tab="trips">📋 History</button>
-    <button class="tab" data-tab="manage-buses">🚌 Buses</button>
-    <button class="tab" data-tab="drivers">👤 Drivers</button>
-    <button class="tab" data-tab="assignments">📅 Assign</button>
-    <button class="tab" data-tab="qr-codes">🎫 QR Codes</button>
+  <!-- ══════════════════════════════════════════════
+       NAVIGATION
+  ══════════════════════════════════════════════ -->
+  <nav class="nav">
+    <button class="tab active" data-tab="scanner">
+      <i class="fa fa-qrcode"></i> Scanner
+    </button>
+    <button class="tab" data-tab="dashboard">
+      <i class="fa fa-gauge-high"></i> Dashboard
+    </button>
+    <button class="tab" data-tab="trips">
+      <i class="fa fa-clock-rotate-left"></i> History
+    </button>
+    <button class="tab" data-tab="manage-buses">
+      <i class="fa fa-bus"></i> Buses
+    </button>
+    <button class="tab" data-tab="drivers">
+      <i class="fa fa-id-card"></i> Drivers
+    </button>
+    <button class="tab" data-tab="assignments">
+      <i class="fa fa-calendar-check"></i> Assignments
+    </button>
+    <button class="tab" data-tab="qr-codes">
+      <i class="fa fa-qrcode"></i> QR Codes
+    </button>
   </nav>
 
-  <!-- SCANNER TAB -->
-  <section id="scanner" class="page active">
+  <!-- ══════════════════════════════════════════════
+       PAGE: SCANNER
+  ══════════════════════════════════════════════ -->
+  <div class="page active" id="scanner">
+
     <div class="card">
-      <h2>📷 Scan Bus QR Code</h2>
-      <p style="color:#64748b;font-size:13px;margin-bottom:14px;">
-        Point camera at the QR sticker on the bus door
-      </p>
-
-      <div id="qr-reader"></div>
-
-      <div class="btn-row">
-        <button id="btn-start" class="btn primary" onclick="startScanner()">
-          📷 Start Camera
+      <div class="card-title">
+        <i class="fa fa-camera"></i> Scan Bus QR Code
+      </div>
+      <div class="scanner-controls">
+        <button class="btn success" id="btn-start" onclick="startScanner()">
+          <i class="fa fa-play"></i> Start Camera
         </button>
-        <button id="btn-stop" class="btn danger" onclick="stopScanner()" style="display:none">
-          ⏹ Stop Camera
+        <button class="btn danger" id="btn-stop" onclick="stopScanner()"
+          style="display:none;">
+          <i class="fa fa-stop"></i> Stop Camera
         </button>
       </div>
-
-      <div class="divider"><span>OR Enter Bus Number Manually</span></div>
-
-      <div class="form-group">
-        <input id="manual-id" class="input" placeholder="Bus Number e.g. BUS-001"/>
-      </div>
-      <button class="btn secondary" onclick="manualScan()">✅ Submit</button>
+      <div id="qr-reader" style="width:100%;"></div>
     </div>
 
-    <div id="result-box" class="card result-box" style="display:none">
-      <div id="r-icon" class="r-icon"></div>
-      <h2 id="r-action"></h2>
-      <p id="r-msg"></p>
+    <div class="card">
+      <div class="card-title">
+        <i class="fa fa-keyboard"></i> Manual Entry
+      </div>
+      <div class="manual-row">
+        <input type="text" id="manual-id" placeholder="Enter Bus Number (e.g. BUS-001)"
+          onkeydown="if(event.key==='Enter') manualScan()"/>
+        <button class="btn primary" onclick="manualScan()">
+          <i class="fa fa-arrow-right"></i> Submit
+        </button>
+      </div>
+    </div>
+
+    <!-- Result Box -->
+    <div class="card result-box" id="result-box">
+      <div class="result-header">
+        <div class="result-icon" id="r-icon">🟢</div>
+        <div>
+          <div class="result-action" id="r-action">BUS ENTERED</div>
+          <div class="result-msg" id="r-msg"></div>
+        </div>
+      </div>
       <div id="r-details"></div>
     </div>
-  </section>
 
-  <!-- DASHBOARD TAB -->
-  <section id="dashboard" class="page">
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: DASHBOARD
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="dashboard">
+
+    <div id="stats-grid" class="stats-grid"></div>
+
     <div class="card">
-      <h2>📊 Live Statistics</h2>
-      <div id="stats-grid" class="stats-grid"></div>
+      <div class="card-title">
+        <i class="fa fa-bus"></i> Live Bus Status
+      </div>
+      <div id="occupancy-list" class="occ-grid"></div>
     </div>
-    <div class="card">
-      <h2>🚌 Bus Status</h2>
-      <div id="occupancy-list"></div>
-    </div>
-  </section>
 
-  <!-- HISTORY TAB -->
-  <section id="trips" class="page">
-    <div class="card">
-      <h2>📋 Visit History</h2>
+  </div>
 
-      <div class="filter-row">
-        <select id="f-bus" class="input">
+  <!-- ══════════════════════════════════════════════
+       PAGE: VISIT HISTORY
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="trips">
+
+    <div class="filter-bar">
+      <div class="form-group">
+        <label><i class="fa fa-bus"></i> Bus</label>
+        <select id="f-bus" onchange="loadTrips()">
           <option value="">All Buses</option>
         </select>
-        <select id="f-status" class="input">
-          <option value="">All Status</option>
+      </div>
+      <div class="form-group">
+        <label><i class="fa fa-filter"></i> Status</label>
+        <select id="f-status" onchange="loadTrips()">
+          <option value="">All</option>
           <option value="INSIDE">Inside</option>
-          <option value="COMPLETED">Left</option>
+          <option value="COMPLETED">Completed</option>
         </select>
-        <input id="f-date" class="input" type="date"/>
-        <button class="btn primary" onclick="loadTrips()">🔍 Filter</button>
       </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <button class="btn danger" onclick="clearAllHistory()"
-                style="padding:8px 14px;font-size:12px;">
-          🗑️ Clear All History
-        </button>
-        <button class="btn secondary" onclick="clearOldHistory()"
-                style="padding:8px 14px;font-size:12px;">
-          🧹 Clear Old (30+ days)
-        </button>
-        <button class="btn secondary" onclick="clearByDate()"
-                style="padding:8px 14px;font-size:12px;">
-          📅 Clear Selected Date
-        </button>
+      <div class="form-group">
+        <label><i class="fa fa-calendar"></i> Date</label>
+        <input type="date" id="f-date" onchange="loadTrips()"/>
       </div>
+      <button class="btn primary" onclick="loadTrips()">
+        <i class="fa fa-rotate"></i> Refresh
+      </button>
+    </div>
 
+    <div class="card" style="padding:0;">
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Bus</th>
-              <th>Driver</th>
-              <th>Entry Time</th>
-              <th>Exit Time</th>
-              <th>Duration</th>
-              <th>Status</th>
-              <th>Action</th>
+              <th><i class="fa fa-bus"></i> Bus</th>
+              <th><i class="fa fa-user"></i> Driver</th>
+              <th><i class="fa fa-sign-in-alt"></i> Entry</th>
+              <th><i class="fa fa-sign-out-alt"></i> Exit</th>
+              <th><i class="fa fa-clock"></i> Duration</th>
+              <th><i class="fa fa-circle-dot"></i> Status</th>
+              <th></th>
             </tr>
           </thead>
-          <tbody id="trips-body"></tbody>
+          <tbody id="trips-body">
+            <tr>
+              <td colspan="7">
+                <div class="empty-state">
+                  <i class="fa fa-clock-rotate-left"></i>
+                  <p>No records yet</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </div>
-  </section>
 
-  <!-- MANAGE BUSES TAB -->
-  <section id="manage-buses" class="page">
+    <div class="section-title">Danger Zone</div>
+    <div class="btn-group">
+      <button class="btn warning" onclick="clearByDate()">
+        <i class="fa fa-calendar-xmark"></i> Clear Selected Date
+      </button>
+      <button class="btn warning" onclick="clearOldHistory()">
+        <i class="fa fa-hourglass-end"></i> Clear Old (30d)
+      </button>
+      <button class="btn danger" onclick="clearAllHistory()">
+        <i class="fa fa-trash"></i> Clear All History
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: MANAGE BUSES
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="manage-buses">
+
     <div class="card">
-      <h2>🚌 Add New Bus</h2>
+      <div class="card-title">
+        <i class="fa fa-plus-circle"></i> Add New Bus
+      </div>
       <form onsubmit="addBus(event)">
         <div class="form-group">
-          <label>Bus Number *</label>
-          <input id="new-bus-number" class="input" placeholder="e.g. BUS-026" required/>
+          <label>Bus Number</label>
+          <input type="text" id="new-bus-number" placeholder="e.g. BUS-026" required/>
         </div>
         <div class="form-group">
-          <label>Route *</label>
-          <input id="new-bus-route" class="input" placeholder="e.g. Route 26: New Zone" required/>
+          <label>Route</label>
+          <input type="text" id="new-bus-route" placeholder="e.g. Route 26: Lake Road" required/>
         </div>
         <div class="form-group">
-          <label>Capacity *</label>
-          <input id="new-bus-capacity" class="input" type="number" placeholder="50" value="50" required/>
+          <label>Capacity</label>
+          <input type="number" id="new-bus-capacity" value="50" min="1" max="100"/>
         </div>
-        <button class="btn primary block" type="submit">✅ Add Bus</button>
+        <button class="btn primary" type="submit">
+          <i class="fa fa-plus"></i> Add Bus
+        </button>
+        <div class="msg-box" id="bus-msg"></div>
       </form>
-      <div id="bus-msg"></div>
     </div>
 
-    <div class="card">
-      <h2>🚌 All Buses</h2>
-      <div id="buses-list"></div>
-    </div>
-  </section>
+    <div class="section-title">All Buses</div>
+    <div id="buses-list"></div>
 
-  <!-- DRIVERS TAB -->
-  <section id="drivers" class="page">
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: DRIVERS
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="drivers">
+
     <div class="card">
-      <h2>👤 Add New Driver</h2>
+      <div class="card-title">
+        <i class="fa fa-user-plus"></i> Add New Driver
+      </div>
       <form onsubmit="addDriver(event)">
         <div class="form-group">
-          <label>Driver ID *</label>
-          <input id="new-driver-id" class="input" placeholder="e.g. DRV-004" required/>
+          <label>Driver ID</label>
+          <input type="text" id="new-driver-id" placeholder="e.g. DRV-004" required/>
         </div>
         <div class="form-group">
-          <label>Full Name *</label>
-          <input id="new-driver-name" class="input" placeholder="e.g. Ramesh Kumar" required/>
+          <label>Full Name</label>
+          <input type="text" id="new-driver-name" placeholder="e.g. Rajesh Kumar" required/>
         </div>
         <div class="form-group">
-          <label>Phone Number</label>
-          <input id="new-driver-phone" class="input" placeholder="+91 98765 43210"/>
+          <label>Phone</label>
+          <input type="text" id="new-driver-phone" placeholder="+91 98765 43213"/>
         </div>
         <div class="form-group">
           <label>License Number</label>
-          <input id="new-driver-license" class="input" placeholder="DL-1234567890"/>
+          <input type="text" id="new-driver-license" placeholder="DL-1234567893"/>
         </div>
-        <button class="btn primary block" type="submit">✅ Add Driver</button>
+        <button class="btn primary" type="submit">
+          <i class="fa fa-plus"></i> Add Driver
+        </button>
+        <div class="msg-box" id="driver-msg"></div>
       </form>
-      <div id="driver-msg"></div>
     </div>
 
-    <div class="card">
-      <h2>👥 All Drivers</h2>
-      <div id="drivers-list"></div>
-    </div>
-  </section>
+    <div class="section-title">All Drivers</div>
+    <div id="drivers-list"></div>
 
-  <!-- ASSIGNMENTS TAB -->
-  <section id="assignments" class="page">
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: ASSIGNMENTS
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="assignments">
+
     <div class="card">
-      <h2>📅 Assign Driver to Bus</h2>
+      <div class="card-title">
+        <i class="fa fa-calendar-plus"></i> Assign Driver to Bus
+      </div>
       <form onsubmit="addAssignment(event)">
         <div class="form-group">
-          <label>Date *</label>
-          <input id="assign-date" class="input" type="date" required/>
-        </div>
-        <div class="form-group">
-          <label>Select Driver *</label>
-          <select id="assign-driver" class="input" required>
+          <label>Driver</label>
+          <select id="assign-driver" required>
             <option value="">-- Choose Driver --</option>
           </select>
         </div>
         <div class="form-group">
-          <label>Select Bus *</label>
-          <select id="assign-bus" class="input" required>
+          <label>Bus</label>
+          <select id="assign-bus" required>
             <option value="">-- Choose Bus --</option>
           </select>
         </div>
         <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="assign-date" required/>
+        </div>
+        <div class="form-group">
           <label>Shift</label>
-          <select id="assign-shift" class="input">
-            <option value="Full Day">Full Day</option>
+          <select id="assign-shift">
             <option value="Morning">Morning</option>
             <option value="Afternoon">Afternoon</option>
-            <option value="Night">Night</option>
+            <option value="Evening">Evening</option>
+            <option value="Full Day" selected>Full Day</option>
           </select>
         </div>
-        <button class="btn primary block" type="submit">✅ Assign</button>
+        <button class="btn primary" type="submit">
+          <i class="fa fa-calendar-check"></i> Assign
+        </button>
+        <div class="msg-box" id="assign-msg"></div>
       </form>
-      <div id="assign-msg"></div>
     </div>
 
-    <div class="card">
-      <h2>📋 Assignments</h2>
-      <div class="filter-row">
-        <input id="filter-assign-date" class="input" type="date"/>
-        <button class="btn primary" onclick="loadAssignments()">🔍 Filter</button>
+    <div class="filter-bar">
+      <div class="form-group" style="flex:1;">
+        <label>Filter by Date</label>
+        <input type="date" id="filter-assign-date" onchange="loadAssignments()"/>
       </div>
-      <div id="assignments-list"></div>
-    </div>
-  </section>
-
-  <!-- QR CODES TAB -->
-  <section id="qr-codes" class="page">
-    <div class="card">
-      <h2>🎫 Bus QR Codes</h2>
-      <p style="color:#64748b;font-size:14px;margin-bottom:16px;">
-        Print these QR codes and stick them on each bus.
-        Gate operator scans them to record entry/exit.
-      </p>
-
-      <button class="btn primary block" onclick="downloadAllQRs()" style="margin-bottom:16px;">
-        ⬇️ Download All QR Codes (ZIP)
+      <button class="btn primary" onclick="loadAssignments()">
+        <i class="fa fa-rotate"></i> Load
       </button>
-
-      <div id="qr-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;">
-      </div>
     </div>
-  </section>
 
-  <!-- EDIT BUS MODAL -->
-  <div id="edit-bus-modal"
-       style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-              background:rgba(0,0,0,0.6);z-index:9999;
-              justify-content:center;align-items:center;padding:20px;">
-    <div style="background:white;border-radius:14px;padding:24px;
-                max-width:450px;width:100%;max-height:90vh;overflow-y:auto;">
-      <h2 style="margin-bottom:16px;">✏️ Edit Bus</h2>
+    <div id="assignments-list"></div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       PAGE: QR CODES
+  ══════════════════════════════════════════════ -->
+  <div class="page" id="qr-codes">
+
+    <div class="card">
+      <div class="card-title">
+        <i class="fa fa-qrcode"></i> Bus QR Codes
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+        Scan or download QR codes for each bus. Each code is permanent.
+      </p>
+      <button class="btn primary" onclick="loadQRCodes()">
+        <i class="fa fa-rotate"></i> Reload QR Codes
+      </button>
+    </div>
+
+    <div id="qr-grid" class="qr-grid"></div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       MODAL: EDIT BUS
+  ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="edit-bus-modal">
+    <div class="modal">
+      <div class="modal-title">
+        <i class="fa fa-pen-to-square"></i> Edit Bus
+      </div>
       <form onsubmit="saveEditBus(event)">
         <input type="hidden" id="edit-bus-number"/>
         <div class="form-group">
           <label>Bus Number</label>
-          <input id="edit-bus-num-display" class="input" disabled style="background:#f1f5f9;"/>
+          <input type="text" id="edit-bus-num-display" disabled
+            style="opacity:0.6;cursor:not-allowed;"/>
         </div>
         <div class="form-group">
-          <label>Route *</label>
-          <input id="edit-route" class="input" required/>
+          <label>Route</label>
+          <input type="text" id="edit-route" required/>
         </div>
         <div class="form-group">
-          <label>Capacity *</label>
-          <input id="edit-capacity" class="input" type="number" required/>
+          <label>Capacity</label>
+          <input type="number" id="edit-capacity" min="1" max="100"/>
         </div>
-        <div style="display:flex;gap:10px;margin-top:20px;">
-          <button type="button" class="btn secondary" onclick="closeEditBusModal()" style="flex:1;">❌ Cancel</button>
-          <button type="submit" class="btn primary" style="flex:1;">💾 Save</button>
+        <div class="btn-group">
+          <button class="btn primary" type="submit">
+            <i class="fa fa-floppy-disk"></i> Save
+          </button>
+          <button class="btn secondary" type="button" onclick="closeEditBusModal()">
+            <i class="fa fa-xmark"></i> Cancel
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- EDIT DRIVER MODAL -->
-  <div id="edit-driver-modal"
-       style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-              background:rgba(0,0,0,0.6);z-index:9999;
-              justify-content:center;align-items:center;padding:20px;">
-    <div style="background:white;border-radius:14px;padding:24px;
-                max-width:450px;width:100%;max-height:90vh;overflow-y:auto;">
-      <h2 style="margin-bottom:16px;">✏️ Edit Driver</h2>
+  <!-- ══════════════════════════════════════════════
+       MODAL: EDIT DRIVER
+  ══════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="edit-driver-modal">
+    <div class="modal">
+      <div class="modal-title">
+        <i class="fa fa-pen-to-square"></i> Edit Driver
+      </div>
       <form onsubmit="saveEditDriver(event)">
         <input type="hidden" id="edit-driver-id"/>
         <div class="form-group">
           <label>Driver ID</label>
-          <input id="edit-driver-id-display" class="input" disabled style="background:#f1f5f9;"/>
+          <input type="text" id="edit-driver-id-display" disabled
+            style="opacity:0.6;cursor:not-allowed;"/>
         </div>
         <div class="form-group">
-          <label>Full Name *</label>
-          <input id="edit-driver-name" class="input" required/>
+          <label>Full Name</label>
+          <input type="text" id="edit-driver-name" required/>
         </div>
         <div class="form-group">
-          <label>Phone Number</label>
-          <input id="edit-driver-phone" class="input"/>
+          <label>Phone</label>
+          <input type="text" id="edit-driver-phone"/>
         </div>
         <div class="form-group">
           <label>License Number</label>
-          <input id="edit-driver-license" class="input"/>
+          <input type="text" id="edit-driver-license"/>
         </div>
-        <div style="display:flex;gap:10px;margin-top:20px;">
-          <button type="button" class="btn secondary" onclick="closeEditDriverModal()" style="flex:1;">❌ Cancel</button>
-          <button type="submit" class="btn primary" style="flex:1;">💾 Save</button>
+        <div class="btn-group">
+          <button class="btn primary" type="submit">
+            <i class="fa fa-floppy-disk"></i> Save
+          </button>
+          <button class="btn secondary" type="button" onclick="closeEditDriverModal()">
+            <i class="fa fa-xmark"></i> Cancel
+          </button>
         </div>
       </form>
     </div>
   </div>
 
-  <footer>🚌 Bus Gate Scanner &copy; 2024</footer>
-</div>
+  <script src="app.js"></script>
 
-<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
-<script src="js/app.js"></script>
 </body>
 </html>
