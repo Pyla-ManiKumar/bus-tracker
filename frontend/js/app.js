@@ -1,5 +1,5 @@
 // Auto-detect IP address
-const API = `http://${window.location.hostname}:5000/api`;
+const API = 'https://bus-tracker-y44b.onrender.com/api';
 let scanner = null;
 let scanning = false;
 
