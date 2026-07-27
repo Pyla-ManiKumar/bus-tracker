@@ -281,10 +281,34 @@ async function loadBusesList() {
           <div style="font-weight:700;font-size:17px;color:#1e293b;">🚌 ${b.bus_number}</div>
           <div style="font-size:13px;color:#64748b;margin-top:4px;">📍 ${b.route}</div>
           <div style="font-size:12px;color:#64748b;margin-top:2px;">👥 Capacity: ${b.capacity}</div>
+
+          ${b.today_driver_name ? `
+            <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;">
+              <div style="font-size:13px;color:#16a34a;font-weight:700;">
+                👤 Today's Driver: ${b.today_driver_name}
+              </div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">
+                🆔 ${b.today_driver_id} | ⏰ ${b.today_shift}
+              </div>
+              ${b.today_driver_phone ? `
+                <div style="font-size:11px;color:#64748b;margin-top:2px;">
+                  📞 ${b.today_driver_phone}
+                </div>` : ''}
+            </div>
+          ` : `
+            <div style="margin-top:10px;padding-top:10px;border-top:1px dashed #cbd5e1;">
+              <div style="font-size:12px;color:#94a3b8;font-style:italic;">
+                ⚠️ No driver assigned today
+              </div>
+            </div>
+          `}
         </div>
+
         <div style="display:flex;flex-direction:column;gap:6px;">
-          <button class="btn primary" onclick='openEditBusModal(${JSON.stringify(b)})' style="padding:8px 14px;font-size:12px;">✏️ Edit</button>
-          <button class="btn danger" onclick="deleteBus('${b.bus_number}')" style="padding:8px 14px;font-size:12px;">🗑️ Delete</button>
+          <button class="btn primary" onclick='openEditBusModal(${JSON.stringify(b)})'
+                  style="padding:8px 14px;font-size:12px;">✏️ Edit</button>
+          <button class="btn danger" onclick="deleteBus('${b.bus_number}')"
+                  style="padding:8px 14px;font-size:12px;">🗑️ Delete</button>
         </div>
       </div>`).join('');
   } catch { toast('Failed to load buses', 'error'); }

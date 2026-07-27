@@ -60,7 +60,33 @@ with app.app_context():
 # ══════════════════════════════════════════════════
 @app.route('/api/buses', methods=['GET'])
 def get_buses():
-    return jsonify([b.to_dict() for b in Bus.query.all()])
+    today = datetime.utcnow().date()
+    buses = Bus.query.all()
+    result = []
+
+    for b in buses:
+        bus_dict = b.to_dict()
+
+        # Get today's assigned driver
+        today_assign = Assignment.query.filter_by(
+            bus_id=b.id, assignment_date=today
+        ).first()
+
+        if today_assign:
+            drv = Driver.query.get(today_assign.driver_id)
+            if drv:
+                bus_dict['today_driver_name'] = drv.name
+                bus_dict['today_driver_id'] = drv.driver_id
+                bus_dict['today_driver_phone'] = drv.phone or ''
+                bus_dict['today_shift'] = today_assign.shift
+            else:
+                bus_dict['today_driver_name'] = None
+        else:
+            bus_dict['today_driver_name'] = None
+
+        result.append(bus_dict)
+
+    return jsonify(result)
 
 
 @app.route('/api/buses', methods=['POST'])
@@ -247,7 +273,7 @@ def scan_bus():
     ).order_by(BusVisit.entry_time.desc()).first()
 
     # Get today's driver
-    today = datetime.utcnow().date()
+    today = now_ist().date()
     today_assign = Assignment.query.filter_by(
         bus_id=bus.id, assignment_date=today).first()
     driver_name = '-'
@@ -257,7 +283,7 @@ def scan_bus():
 
     if active_visit:
         # EXIT — bus is leaving
-        active_visit.exit_time = datetime.utcnow()
+        active_visit.exit_time = now_ist()
         active_visit.status = 'COMPLETED'
         db.session.commit()
 
@@ -279,7 +305,7 @@ def scan_bus():
         })
     else:
         # ENTRY — bus is arriving
-        visit = BusVisit(bus_id=bus.id, entry_time=datetime.utcnow(), status='INSIDE')
+        visit = BusVisit(bus_id=bus.id, entry_time=now_ist(), status='INSIDE')
         db.session.add(visit)
         db.session.commit()
 
@@ -326,7 +352,7 @@ def get_visits():
 @app.route('/api/dashboard', methods=['GET'])
 def dashboard():
     try:
-        today = datetime.utcnow().date()
+        today = now_ist().date()
 
         buses_inside = BusVisit.query.filter_by(status='INSIDE').count()
 
